@@ -352,6 +352,8 @@ type ServerAppointment = {
   id: string;
   title: string;
   startsAt: string;
+  eventDate?: string;
+  eventTime?: string;
 };
 
 type PushSnapshot = {
@@ -411,10 +413,9 @@ function buildPushSnapshot(data = getBixbo()): PushSnapshot {
     }),
     ...(data.events ?? []).flatMap((event) => {
       if (!event?.id || !event.startDate) return [];
-      // Calendar events intentionally use 09:00 on the event date. The existing
-      // server-side 24h appointment window therefore sends the main reminder at
-      // 09:00 on the previous calendar day (18 Aug -> 17 Aug), even for all-day
-      // events or events that have their own start time.
+      // Keep the existing synthetic 09:00 anchor so an older deployed server
+      // still sends the unchanged 09:00 reminder on the previous calendar day.
+      // The real event date/time travels separately for the same-day alert.
       const startsAt = appointmentIso(event.startDate, "09:00");
       if (!startsAt) return [];
       return [
@@ -422,6 +423,8 @@ function buildPushSnapshot(data = getBixbo()): PushSnapshot {
           id: `event:${String(event.id)}`,
           title: `Event: ${event.title || "Event"}`,
           startsAt,
+          eventDate: event.startDate,
+          eventTime: event.time?.trim() || undefined,
         },
       ];
     }),
@@ -804,39 +807,66 @@ export async function runNotificationChecks(now = new Date()) {
         id: `event:${String(event.id)}`,
         title: event.title || "Event",
         date: event.startDate,
-        // Calendar-event reminders are intentionally anchored to 09:00 so an
-        // event on the 18th produces its main reminder on the 17th at 09:00.
-        time: "09:00",
+        time: event.time?.trim() || undefined,
         kind: "event" as const,
       })),
     ];
 
     for (const appointment of appointments) {
       if (!appointment?.date) continue;
-      const startsAt = appointmentIso(appointment.date, appointment.time);
-      if (!startsAt) continue;
-      const difference = (new Date(startsAt).getTime() - now.getTime()) / 60_000;
 
-      const windows = appointment.kind === "event"
-        ? [{ label: "tomorrow", minutes: 24 * 60, key: "24h" }]
-        : [
-            { label: "tomorrow", minutes: 24 * 60, key: "24h" },
-            { label: "in 2 hours", minutes: 120, key: "2h" },
-          ];
-
-      for (const window of windows) {
-        if (difference <= window.minutes && difference > window.minutes - 30) {
-          const prefix = appointment.kind === "event" ? "event" : "appt";
+      if (appointment.kind === "event") {
+        const dayBefore = addDays(appointment.date, -1);
+        if (today === dayBefore && dueNow("09:00", now)) {
           await fire(
             prefs,
             {
-              title: appointment.kind === "event" ? "Event tomorrow" : `Appointment ${window.label}`,
+              title: "Event tomorrow",
               body: `${appointment.title}.`,
               url: "/",
-              tag: `${prefix}-${appointment.id}-${window.key}`,
+              tag: `event-${appointment.id}-day-before`,
               category: "appointments",
             },
-            `${prefix}:${appointment.id}:${window.key}`,
+            `event:${appointment.id}:day-before`,
+          );
+        }
+
+        if (appointment.time && today === appointment.date && dueNow(appointment.time, now)) {
+          await fire(
+            prefs,
+            {
+              title: "Event now",
+              body: `${appointment.title}.`,
+              url: "/",
+              tag: `event-${appointment.id}-start`,
+              category: "appointments",
+            },
+            `event:${appointment.id}:start:${appointment.date}:${appointment.time}`,
+          );
+        }
+        continue;
+      }
+
+      const startsAt = appointmentIso(appointment.date, appointment.time);
+      if (!startsAt) continue;
+      const difference = (new Date(startsAt).getTime() - now.getTime()) / 60_000;
+      const windows = [
+        { label: "tomorrow", minutes: 24 * 60, key: "24h" },
+        { label: "in 2 hours", minutes: 120, key: "2h" },
+      ];
+
+      for (const window of windows) {
+        if (difference <= window.minutes && difference > window.minutes - 30) {
+          await fire(
+            prefs,
+            {
+              title: `Appointment ${window.label}`,
+              body: `${appointment.title}.`,
+              url: "/",
+              tag: `appt-${appointment.id}-${window.key}`,
+              category: "appointments",
+            },
+            `appt:${appointment.id}:${window.key}`,
           );
         }
       }

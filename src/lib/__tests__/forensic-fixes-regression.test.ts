@@ -20,12 +20,12 @@ describe("forensic report fixes", () => {
     expect(staleRecovery).toContain("RECOVERY_WINDOW_MS = 30_000");
   });
 
-  test("preloads mobile route chunks before navigation commits", () => {
+  test("keeps router intent preload while avoiding eager BottomNav preloads", () => {
     const router = readFileSync("src/router.tsx", "utf8");
     const bottomNav = readFileSync("src/components/BottomNav.tsx", "utf8");
 
     expect(router).toContain('defaultPreload: "intent"');
-    expect(bottomNav).toContain('preload="intent"');
+    expect(bottomNav).toContain('preload={false}');
     expect(bottomNav).toContain("pointer-events-none");
   });
 
