@@ -19,8 +19,9 @@ jobs:
       - uses: actions/checkout@v7.0.1
         with:
           fetch-depth: 0
+          ref: ${{ github.event.pull_request.head.ref || github.ref_name }}
       - name: Apply yearly PDF monthly patch
-        if: github.ref == 'refs/heads/fix/yearly-pdf-monthly-aggregation' && github.actor != 'github-actions[bot]'
+        if: github.actor != 'github-actions[bot]' && (github.ref == 'refs/heads/fix/yearly-pdf-monthly-aggregation' || github.head_ref == 'fix/yearly-pdf-monthly-aggregation')
         shell: bash
         run: |
           set -euo pipefail
