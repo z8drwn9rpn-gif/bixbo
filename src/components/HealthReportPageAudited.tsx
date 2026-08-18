@@ -106,7 +106,7 @@ function ReportDocument({ days, data, range, locale, units, yearly = false }: { 
   const reportBowelTypes = yearly ? months.map((month) => month.bowelMode).filter((value): value is number => value != null) : bowelTypes;
   const reportNoMovement = yearly ? months.filter((month) => month.hasNoBowelMovement).length : noMovement;
   const commonBowel = mode(reportBowelTypes);
-  const commonBowelLabel = commonBowel == null ? "—" : commonBowel === 0 ? "Type 0" : \`Type \${commonBowel}\`;
+  const commonBowelLabel = commonBowel == null ? "—" : commonBowel === 0 ? "Type 0" : `Type ${commonBowel}`;
 
   const weightPoints = days.flatMap((day) => {
     const entries = day.log.weightEntries ?? [];
@@ -158,19 +158,19 @@ function ReportDocument({ days, data, range, locale, units, yearly = false }: { 
 
   return <div className="hrDoc">
     <Sheet number={1} title="Health Report" subtitle={range}>
-      <div className="meta"><span>{yearly ? \`\${recordedMonths.length}/\${months.length} months with recorded data\` : \`\${loggedDays.length}/\${days.length} days with recorded data\`}</span><span>Generated {new Date().toLocaleDateString(locale)}</span></div>
+      <div className="meta"><span>{yearly ? `${recordedMonths.length}/${months.length} months with recorded data` : `${loggedDays.length}/${days.length} days with recorded data`}</span><span>Generated {new Date().toLocaleDateString(locale)}</span></div>
       <h2>At a glance <small>audited calculations</small></h2>
       <div className="metrics ten">
-        <Metric label="Pain" value={\`\${compactNumber(average(painValues))}/10\`} note={yearly ? \`monthly avg · range \${compactNumber(minValue(painValues))}–\${compactNumber(maxValue(painValues))}\` : \`daily avg · range \${compactNumber(minValue(painValues))}–\${compactNumber(maxValue(painValues))}\`} />
-        <Metric label="Headache" value={\`\${compactNumber(average(headacheOverviewValues))}/10\`} note={yearly ? \`monthly avg · \${headacheEpisodes.length} recorded intensities · max \${compactNumber(maxValue(headacheEpisodes))}\` : \`\${headacheEpisodes.length} recorded intensities · max \${compactNumber(maxValue(headacheEpisodes))}\`} />
-        <Metric label="Hot flashes" value={\`\${compactNumber(average(hotFlashOverviewValues))}/5\`} note={yearly ? \`monthly avg · \${hotFlashEpisodes.length} recorded intensities · max \${compactNumber(maxValue(hotFlashEpisodes))}\` : \`\${hotFlashEpisodes.length} recorded intensities · max \${compactNumber(maxValue(hotFlashEpisodes))}\`} />
-        <Metric label="Nausea" value={\`\${compactNumber(average(nauseaOverviewValues))}/10\`} note={yearly ? \`monthly avg · \${nauseaEpisodes.length} recorded intensities · max \${compactNumber(maxValue(nauseaEpisodes))}\` : \`\${nauseaEpisodes.length} recorded intensities · max \${compactNumber(maxValue(nauseaEpisodes))}\`} />
-        <Metric label="Tetany" value={\`\${compactNumber(average(tetanyOverviewValues))}/5\`} note={yearly ? \`monthly avg · \${tetanyEpisodes.length} episodes · max \${compactNumber(maxValue(tetanyEpisodes))}\` : \`\${tetanyEpisodes.length} episodes · max \${compactNumber(maxValue(tetanyEpisodes))}\`} />
-        <Metric label="Panic" value={\`\${compactNumber(average(panicOverviewValues))}/10\`} note={yearly ? \`monthly avg · \${panicEpisodes.length} episodes · max \${compactNumber(maxValue(panicEpisodes))}\` : \`\${panicEpisodes.length} episodes · max \${compactNumber(maxValue(panicEpisodes))}\`} />
-        <Metric label="Sleep" value={sleepOverviewValues.some((value) => value != null) ? \`\${compactNumber(average(sleepOverviewValues))} h\` : "—"} note={yearly ? \`\${months.filter((month) => month.sleep != null).length} months with hours recorded\` : \`\${sleepValues.length} days with hours recorded\`} />
-        <Metric label="Bowel" value={commonBowelLabel} note={yearly ? \`\${months.filter((month) => month.bowelMode != null).length} months with bowel records · \${reportNoMovement} months with no movement\` : \`\${bowelLogs} bowel logs · \${noMovement} no movement\`} />
-        <Metric label="Latest weight" value={latestWeight != null ? formatWeight(latestWeight, units) : "—"} note={\`\${weightPoints.length} measurements in range\`} />
-        {yearly ? <Metric label="Coverage" value={\`\${Math.round((recordedMonths.length / Math.max(1, months.length)) * 100)}%\`} note={\`\${recordedMonths.length} of \${months.length} months\`} /> : <Metric label="Coverage" value={\`\${Math.round((loggedDays.length / Math.max(1, days.length)) * 100)}%\`} note={\`\${loggedDays.length} of \${days.length} days\`} />}
+        <Metric label="Pain" value={`${compactNumber(average(painValues))}/10`} note={yearly ? `monthly avg · range ${compactNumber(minValue(painValues))}–${compactNumber(maxValue(painValues))}` : `daily avg · range ${compactNumber(minValue(painValues))}–${compactNumber(maxValue(painValues))}`} />
+        <Metric label="Headache" value={`${compactNumber(average(headacheOverviewValues))}/10`} note={yearly ? `monthly avg · ${headacheEpisodes.length} recorded intensities · max ${compactNumber(maxValue(headacheEpisodes))}` : `${headacheEpisodes.length} recorded intensities · max ${compactNumber(maxValue(headacheEpisodes))}`} />
+        <Metric label="Hot flashes" value={`${compactNumber(average(hotFlashOverviewValues))}/5`} note={yearly ? `monthly avg · ${hotFlashEpisodes.length} recorded intensities · max ${compactNumber(maxValue(hotFlashEpisodes))}` : `${hotFlashEpisodes.length} recorded intensities · max ${compactNumber(maxValue(hotFlashEpisodes))}`} />
+        <Metric label="Nausea" value={`${compactNumber(average(nauseaOverviewValues))}/10`} note={yearly ? `monthly avg · ${nauseaEpisodes.length} recorded intensities · max ${compactNumber(maxValue(nauseaEpisodes))}` : `${nauseaEpisodes.length} recorded intensities · max ${compactNumber(maxValue(nauseaEpisodes))}`} />
+        <Metric label="Tetany" value={`${compactNumber(average(tetanyOverviewValues))}/5`} note={yearly ? `monthly avg · ${tetanyEpisodes.length} episodes · max ${compactNumber(maxValue(tetanyEpisodes))}` : `${tetanyEpisodes.length} episodes · max ${compactNumber(maxValue(tetanyEpisodes))}`} />
+        <Metric label="Panic" value={`${compactNumber(average(panicOverviewValues))}/10`} note={yearly ? `monthly avg · ${panicEpisodes.length} episodes · max ${compactNumber(maxValue(panicEpisodes))}` : `${panicEpisodes.length} episodes · max ${compactNumber(maxValue(panicEpisodes))}`} />
+        <Metric label="Sleep" value={sleepOverviewValues.some((value) => value != null) ? `${compactNumber(average(sleepOverviewValues))} h` : "—"} note={yearly ? `${months.filter((month) => month.sleep != null).length} months with hours recorded` : `${sleepValues.length} days with hours recorded`} />
+        <Metric label="Bowel" value={commonBowelLabel} note={yearly ? `${months.filter((month) => month.bowelMode != null).length} months with bowel records · ${reportNoMovement} months with no movement` : `${bowelLogs} bowel logs · ${noMovement} no movement`} />
+        <Metric label="Latest weight" value={latestWeight != null ? formatWeight(latestWeight, units) : "—"} note={`${weightPoints.length} measurements in range`} />
+        {yearly ? <Metric label="Coverage" value={`${Math.round((recordedMonths.length / Math.max(1, months.length)) * 100)}%`} note={`${recordedMonths.length} of ${months.length} months`} /> : <Metric label="Coverage" value={`${Math.round((loggedDays.length / Math.max(1, days.length)) * 100)}%`} note={`${loggedDays.length} of ${days.length} days`} />}
       </div>
       <div className="overviewGrid">
         <div>
@@ -184,7 +184,7 @@ function ReportDocument({ days, data, range, locale, units, yearly = false }: { 
             <h2>Symptom frequency <small>(recorded months)</small></h2>
             <div className="bars">{yearlySymptomFrequency.map((item) => {
               const pct = percentage(item.count, yearlySymptomFrequencyDenominator);
-              return <div key={item.label}><span>{item.label}</span><i><b style={{ width: \`\${Math.max(item.count ? 2 : 0, pct)}%\` }} /></i><strong>{item.count} ({pct}%)</strong></div>;
+              return <div key={item.label}><span>{item.label}</span><i><b style={{ width: `${Math.max(item.count ? 2 : 0, pct)}%` }} /></i><strong>{item.count} ({pct}%)</strong></div>;
             })}</div>
             <YearlyObservedPatterns months={months} recordedMonthCount={yearlySymptomFrequencyDenominator} />
             <div className="coverage"><b>Data coverage</b><p>{months.length - recordedMonths.length} of {months.length} months have no meaningful health log. No record is not treated as symptom-free. Symptom-frequency percentages use recorded months as denominator.</p></div>
@@ -192,7 +192,7 @@ function ReportDocument({ days, data, range, locale, units, yearly = false }: { 
             <h2>Symptom frequency <small>(recorded days)</small></h2>
             <div className="bars">{symptomFrequency.map((item) => {
               const pct = percentage(item.count, symptomFrequencyDenominator);
-              return <div key={item.label}><span>{item.label}</span><i><b style={{ width: \`\${Math.max(item.count ? 2 : 0, pct)}%\` }} /></i><strong>{item.count} ({pct}%)</strong></div>;
+              return <div key={item.label}><span>{item.label}</span><i><b style={{ width: `${Math.max(item.count ? 2 : 0, pct)}%` }} /></i><strong>{item.count} ({pct}%)</strong></div>;
             })}</div>
             <HealthReportObservedPatterns days={days} recordedDayCount={symptomFrequencyDenominator} />
             <div className="coverage"><b>Data coverage</b><p>{days.length - loggedDays.length} of {days.length} days have no meaningful health log. No record is not treated as symptom-free.</p></div>
@@ -208,31 +208,31 @@ function ReportDocument({ days, data, range, locale, units, yearly = false }: { 
         const value = month.pain;
         const width = value == null ? 0 : Math.max(0, Math.min(100, value * 10));
         const color = value == null ? "#eef0e7" : painColor(value);
-        return <div key={month.monthKey}><span>{monthLabel(month.monthKey, locale)}</span><i><b style={{ width: \`\${width}%\`, background: color }} /></i><strong>{value == null ? "—" : compactNumber(value)}</strong></div>;
+        return <div key={month.monthKey}><span>{monthLabel(month.monthKey, locale)}</span><i><b style={{ width: `${width}%`, background: color }} /></i><strong>{value == null ? "—" : compactNumber(value)}</strong></div>;
       })}</div>
       <h2>Bowel distribution <small>most common recorded type per month; no-movement shown separately</small></h2>
       <div className="bowelBars">{Array.from({ length: 8 }, (_, type) => {
         const count = reportBowelTypes.filter((value) => value === type).length;
-        const label = type === 0 ? "Type 0 — Mystery" : BRISTOL.find((item) => item.n === type)?.label ?? \`Type \${type}\`;
+        const label = type === 0 ? "Type 0 — Mystery" : BRISTOL.find((item) => item.n === type)?.label ?? `Type ${type}`;
         const maxCount = Math.max(1, ...Array.from({ length: 8 }, (__, current) => reportBowelTypes.filter((value) => value === current).length));
-        return <div key={type}><span>{label}</span><i><b style={{ width: \`\${(count / maxCount) * 100}%\` }} /></i><strong>{count}</strong></div>;
+        return <div key={type}><span>{label}</span><i><b style={{ width: `${(count / maxCount) * 100}%` }} /></i><strong>{count}</strong></div>;
       })}</div>
       <div className="miniMetrics one"><Metric label="Months with no bowel movement" value={String(reportNoMovement)} note="Months containing an explicit no-movement record" /></div>
-    </Sheet> : trendPages.map((trendDays, trendIndex) => <Sheet key={\`trends-\${trendIndex}\`} number={2 + trendIndex} title="Trends" subtitle={trendPages.length > 1 ? \`\${range} · Part \${trendIndex + 1} of \${trendPages.length}\` : range}>
+    </Sheet> : trendPages.map((trendDays, trendIndex) => <Sheet key={`trends-${trendIndex}`} number={2 + trendIndex} title="Trends" subtitle={trendPages.length > 1 ? `${range} · Part ${trendIndex + 1} of ${trendPages.length}` : range}>
       <h2>Pain by day <small>daily average of real pain measurements</small></h2>
       <div className="painBars">{trendDays.map((day) => {
         const value = day.pain;
         const width = value == null ? 0 : Math.max(0, Math.min(100, value * 10));
         const color = value == null ? "#eef0e7" : painColor(value);
-        return <div key={day.key}><span>{shortDate(day.key, locale)}</span><i><b style={{ width: \`\${width}%\`, background: color }} /></i><strong>{value == null ? "—" : compactNumber(value)}</strong></div>;
+        return <div key={day.key}><span>{shortDate(day.key, locale)}</span><i><b style={{ width: `${width}%`, background: color }} /></i><strong>{value == null ? "—" : compactNumber(value)}</strong></div>;
       })}</div>
       {trendIndex === 0 ? <>
         <h2>Bowel distribution <small>Type 0 is valid; no-movement is shown separately</small></h2>
         <div className="bowelBars">{Array.from({ length: 8 }, (_, type) => {
           const count = bowelTypes.filter((value) => value === type).length;
-          const label = type === 0 ? "Type 0 — Mystery" : BRISTOL.find((item) => item.n === type)?.label ?? \`Type \${type}\`;
+          const label = type === 0 ? "Type 0 — Mystery" : BRISTOL.find((item) => item.n === type)?.label ?? `Type ${type}`;
           const maxCount = Math.max(1, ...Array.from({ length: 8 }, (__, current) => bowelTypes.filter((value) => value === current).length));
-          return <div key={type}><span>{label}</span><i><b style={{ width: \`\${(count / maxCount) * 100}%\` }} /></i><strong>{count}</strong></div>;
+          return <div key={type}><span>{label}</span><i><b style={{ width: `${(count / maxCount) * 100}%` }} /></i><strong>{count}</strong></div>;
         })}</div>
         <div className="miniMetrics one"><Metric label="No bowel movement" value={String(noMovement)} note="Recorded explicitly as no movement" /></div>
       </> : null}
@@ -244,20 +244,20 @@ function ReportDocument({ days, data, range, locale, units, yearly = false }: { 
         const trackingStart = firstRecordedScheduledMedicationDate(med, data.medLog, medLogItems);
         const adherenceDates = trackingStart ? dateKeys.filter((date) => date >= trackingStart) : dateKeys;
         const summary = summarizeMedicationAdherence(med, adherenceDates, data.medLog, medLogItems, new Date());
-        return <tr key={med.id}><td><b>{med.name}</b>{med.dose ? <small>{med.dose}</small> : null}</td><td>{(med.times ?? []).map((time) => formatClockTime(time, units)).join(", ") || "—"}</td><td>{summary ? \`\${summary.taken} / \${summary.expected}\` : "—"}</td><td>{summary ? \`\${summary.pct}%\` : "—"}<div className="adhBar"><i><span style={{ width: \`\${summary?.pct ?? 0}%\` }} /></i></div></td></tr>;
+        return <tr key={med.id}><td><b>{med.name}</b>{med.dose ? <small>{med.dose}</small> : null}</td><td>{(med.times ?? []).map((time) => formatClockTime(time, units)).join(", ") || "—"}</td><td>{summary ? `${summary.taken} / ${summary.expected}` : "—"}</td><td>{summary ? `${summary.pct}%` : "—"}<div className="adhBar"><i><span style={{ width: `${summary?.pct ?? 0}%` }} /></i></div></td></tr>;
       })}</tbody></table> : <p className="emptyLine">No scheduled medication configured.</p>}
       <p className="adherenceNote">For grouped medication slots, each selected item is counted separately. Future/not-yet-due doses are not treated as missed. When history exists, adherence starts at the first recorded scheduled-medication date.</p>
       <h2>Extra / PRN uses</h2>
       <table className="prnTable"><thead><tr><th>Medication</th><th>Recorded uses</th><th>Source</th></tr></thead><tbody>
-        {asNeeded.map((med) => <tr key={med.id}><td>{med.name}{med.dose ? \` · \${med.dose}\` : ""}</td><td>{countRecordedPrnUses(med, dateKeys, data.dayLogs, data.medLog)}</td><td>PRN checkbox + matching extra-dose logs</td></tr>)}
+        {asNeeded.map((med) => <tr key={med.id}><td>{med.name}{med.dose ? ` · ${med.dose}` : ""}</td><td>{countRecordedPrnUses(med, dateKeys, data.dayLogs, data.medLog)}</td><td>PRN checkbox + matching extra-dose logs</td></tr>)}
         {[...extraCounts.entries()].filter(([key]) => !knownPrnNames.has(key)).map(([key, item]) => <tr key={key}><td>{item.label}</td><td>{item.count}</td><td>Extra-dose logs</td></tr>)}
         {!asNeeded.length && !extraCounts.size ? <tr><td colSpan={3}>No PRN / extra medication use recorded in this period.</td></tr> : null}
       </tbody></table>
     </Sheet>
 
-    {yearly ? yearlyTimelinePages.map((pageMonths, pageIndex) => <Sheet key={\`yearly-timeline-\${pageIndex}\`} number={timelineStartPage + pageIndex} title="Detailed timeline" subtitle={\`\${range} · Part \${pageIndex + 1} of \${yearlyTimelinePages.length}\`}><p className="subnote">Monthly summaries only. Newest first.</p><YearlyTimelineTable months={pageMonths} data={data} units={units} locale={locale} /></Sheet>) : timelinePages.length ? timelinePages.map((pageDays, pageIndex) => <Sheet key={\`timeline-\${pageIndex}\`} number={timelineStartPage + pageIndex} title="Detailed timeline" subtitle={\`\${range} · Part \${pageIndex + 1} of \${timelinePages.length}\`}><p className="subnote">Only days with meaningful recorded data are shown. Newest first.</p><DetailedTimelineTable days={pageDays} data={data} units={units} locale={locale} /></Sheet>) : <Sheet number={timelineStartPage} title="Detailed timeline" subtitle={range}><p className="subnote">Only days with meaningful recorded data are shown. Newest first.</p><DetailedTimelineTable days={[]} data={data} units={units} locale={locale} /></Sheet>}
+    {yearly ? yearlyTimelinePages.map((pageMonths, pageIndex) => <Sheet key={`yearly-timeline-${pageIndex}`} number={timelineStartPage + pageIndex} title="Detailed timeline" subtitle={`${range} · Part ${pageIndex + 1} of ${yearlyTimelinePages.length}`}><p className="subnote">Monthly summaries only. Newest first.</p><YearlyTimelineTable months={pageMonths} data={data} units={units} locale={locale} /></Sheet>) : timelinePages.length ? timelinePages.map((pageDays, pageIndex) => <Sheet key={`timeline-${pageIndex}`} number={timelineStartPage + pageIndex} title="Detailed timeline" subtitle={`${range} · Part ${pageIndex + 1} of ${timelinePages.length}`}><p className="subnote">Only days with meaningful recorded data are shown. Newest first.</p><DetailedTimelineTable days={pageDays} data={data} units={units} locale={locale} /></Sheet>) : <Sheet number={timelineStartPage} title="Detailed timeline" subtitle={range}><p className="subnote">Only days with meaningful recorded data are shown. Newest first.</p><DetailedTimelineTable days={[]} data={data} units={units} locale={locale} /></Sheet>}
 
-    {detailPages.length ? detailPages.map((pageRows, pageIndex) => <Sheet key={\`details-\${pageIndex}\`} number={detailStartPage + pageIndex} title="Recorded health details" subtitle={\`\${range} · Part \${pageIndex + 1} of \${detailPages.length}\`}><HealthReportDetailTable rows={pageRows} /></Sheet>) : <Sheet number={detailStartPage} title="Recorded health details" subtitle={range}><div className="empty">No health values were recorded in this period.</div></Sheet>}
+    {detailPages.length ? detailPages.map((pageRows, pageIndex) => <Sheet key={`details-${pageIndex}`} number={detailStartPage + pageIndex} title="Recorded health details" subtitle={`${range} · Part ${pageIndex + 1} of ${detailPages.length}`}><HealthReportDetailTable rows={pageRows} /></Sheet>) : <Sheet number={detailStartPage} title="Recorded health details" subtitle={range}><div className="empty">No health values were recorded in this period.</div></Sheet>}
 
     <div className="sr-only">{trendPageCount + 1 + timelinePageCount + Math.max(1, detailPages.length)} report pages after the overview</div>
   </div>;

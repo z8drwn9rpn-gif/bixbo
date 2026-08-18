@@ -18,7 +18,7 @@ describe("yearly PDF monthly reporting", () => {
   });
 
   it("aggregates to calendar months and gives months equal weight", () => {
-    const source = [day("2026-01-05", 10), ...Array.from({ length: 10 }, (_, index) => day(\`2026-02-\${String(index + 1).padStart(2, "0")}\`, 0))];
+    const source = [day("2026-01-05", 10), ...Array.from({ length: 10 }, (_, index) => day(`2026-02-${String(index + 1).padStart(2, "0")}`, 0))];
     const months = aggregateReportMonths(source);
     expect(months).toHaveLength(2);
     expect(months.map((month) => month.pain)).toEqual([10, 0]);
@@ -29,7 +29,7 @@ describe("yearly PDF monthly reporting", () => {
   it("can represent at most 12 reporting units for the one-year preset", () => {
     const source = Array.from({ length: 12 }, (_, index) => {
       const date = new Date(2025, 8 + index, 1);
-      const key = \`\${date.getFullYear()}-\${String(date.getMonth() + 1).padStart(2, "0")}-01\`;
+      const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-01`;
       return day(key, index);
     });
     expect(aggregateReportMonths(source)).toHaveLength(12);

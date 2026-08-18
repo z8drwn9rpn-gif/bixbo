@@ -42,7 +42,7 @@ export function twelveCalendarMonthRange(today: string): [string, string] {
   const zeroBased = (year * 12 + (month - 1)) - 11;
   const startYear = Math.floor(zeroBased / 12);
   const startMonth = (zeroBased % 12 + 12) % 12 + 1;
-  return [\`${startYear}-\${pad2(startMonth)}-01\`, today];
+  return [`${startYear}-${pad2(startMonth)}-01`, today];
 }
 
 function latestMonthWeight(days: ReportDaySummary[]): number | undefined {
@@ -91,7 +91,7 @@ export function aggregateReportMonths(days: ReportDaySummary[], recordedDayKeys 
     const recordedDayCount = monthDays.filter((day) => recordedDayKeys.has(day.key)).length;
 
     return {
-      key: \`\${monthKey}-01\`,
+      key: `${monthKey}-01`,
       monthKey,
       days: monthDays,
       recorded: recordedDayCount > 0,
