@@ -3,8 +3,12 @@ import { useEffect, useMemo, useState } from "react";
 import { ChevronLeft, ChevronRight, ClockIcon, FlameIcon, HeartIcon, Ico, NoteIcon, PillIcon, PoopIcon } from "@/components/icons/BixboExtraIcons";
 import { useI18n } from "@/hooks/useI18n";
 import { summarizeMedicationProgress } from "@/lib/domain/meds";
-import { fromKey, isIntercourseKind, toKey, todayKey, type BixboData } from "@/lib/storage";
+import { fromKey, toKey, todayKey, type BixboData } from "@/lib/storage";
 import { averageNumbers, daysBetweenInclusive } from "./vitalTrends";
+
+function finite(value: unknown): value is number {
+  return typeof value === "number" && Number.isFinite(value);
+}
 
 export function HomeSummaryOverlay({ data, onClose, onOpenCalendar, initialMonth }: {
   data: BixboData;
@@ -38,31 +42,56 @@ export function HomeSummaryOverlay({ data, onClose, onOpenCalendar, initialMonth
     const logs = keys.map((key) => ({ key, log: data.dayLogs[key] })).filter((item) => !!item.log);
 
     const painEntries = logs.flatMap(({ log }) => log?.pain ?? []);
-    const painAvg = averageNumbers(painEntries.map((entry) => entry.score).filter(Number.isFinite));
+    const painAvg = averageNumbers(painEntries.map((entry) => entry.score).filter(finite));
 
-    const headacheEntries = painEntries.filter((entry) => entry.headacheIntensity != null || (entry.headacheTypes?.length ?? 0) > 0);
-    const headacheAvg = averageNumbers(headacheEntries.map((entry) => entry.headacheIntensity).filter((value): value is number => value != null && Number.isFinite(value)));
+    const tetanyEntries = logs.flatMap(({ log }) => log?.tetany ?? []);
+    const tetanyAvg = averageNumbers(tetanyEntries.map((entry) => entry.intensity).filter(finite));
+    const panicEntries = logs.flatMap(({ log }) => log?.panic ?? []);
+    const panicAvg = averageNumbers(panicEntries.map((entry) => entry.intensity).filter(finite));
 
-    const hotFlashEntries = painEntries.filter((entry) => (entry.hotFlashes ?? 0) > 0);
-    const hotFlashAvg = averageNumbers(hotFlashEntries.map((entry) => entry.hotFlashes ?? 0).filter(Number.isFinite));
+    const headacheEntries = painEntries.filter((entry) => entry.headache === true || entry.headacheIntensity != null || (entry.headacheTypes?.length ?? 0) > 0);
+    const headacheAvg = averageNumbers(headacheEntries.map((entry) => entry.headacheIntensity).filter(finite));
+    const pressureEntries = painEntries.filter((entry) => entry.pressureIntensity != null || (entry.pressureTypes?.length ?? 0) > 0);
+    const pressureAvg = averageNumbers(pressureEntries.map((entry) => entry.pressureIntensity).filter(finite));
+    const hotFlashEntries = painEntries.filter((entry) => entry.hotFlashesOn === true || (entry.hotFlashes ?? 0) > 0);
+    const hotFlashAvg = averageNumbers(hotFlashEntries.map((entry) => entry.hotFlashes).filter(finite));
+    const nauseaEntries = painEntries.filter((entry) => entry.nausea === true || entry.nauseaSeverity != null || (entry.nauseaTypes?.length ?? 0) > 0);
+    const nauseaAvg = averageNumbers(nauseaEntries.map((entry) => entry.nauseaSeverity).filter(finite));
+    const pcosEntries = painEntries.filter((entry) => (entry.pcosSymptoms?.length ?? 0) > 0);
 
     const bowelEntries = logs.flatMap(({ log }) => log?.bowel ?? []);
     const bowelMode = (() => {
       const counts = new Map<number, number>();
       for (const entry of bowelEntries) {
-        if (typeof entry.bristol !== "number") continue;
+        if (entry.urinaryOnly || !finite(entry.bristol)) continue;
         counts.set(entry.bristol, (counts.get(entry.bristol) ?? 0) + 1);
       }
       return [...counts.entries()].sort((a, b) => b[1] - a[1] || a[0] - b[0])[0]?.[0] ?? null;
     })();
 
+    const thermoEntries = logs.flatMap(({ log }) => log?.heat ?? []);
     const workoutEntries = logs.flatMap(({ log }) => log?.workout ?? []);
-    const workoutMinutes = workoutEntries.reduce((sum, entry) => sum + (entry.minutes ?? 0), 0);
-    const sleepValues = logs.map(({ log }) => log?.sleepHours ?? log?.pregnancy?.sleepHours ?? log?.postpartum?.sleepHours).filter((value): value is number => value != null && Number.isFinite(value));
+    const workoutMinutes = workoutEntries.reduce((sum, entry) => sum + (finite(entry.minutes) ? entry.minutes : 0), 0);
+    const sleepValues = logs.map(({ log }) => log?.sleepHours ?? log?.pregnancy?.sleepHours ?? log?.postpartum?.sleepHours).filter(finite);
     const sleepAvg = averageNumbers(sleepValues);
 
-    const sexEntries = logs.flatMap(({ log }) => log?.sex?.filter((entry) => isIntercourseKind(entry.kind)) ?? []);
+    const temperatureValues = logs.flatMap(({ log }) => (log?.temperatureEntries?.length ? log.temperatureEntries.map((entry) => entry.value).filter(finite) : finite(log?.temperature) ? [log.temperature] : []));
+    const weightValues = logs.flatMap(({ log }) => (log?.weightEntries?.length ? log.weightEntries.map((entry) => entry.value).filter(finite) : finite(log?.weight) ? [log.weight] : []));
+    const temperatureAvg = averageNumbers(temperatureValues);
+    const weightAvg = averageNumbers(weightValues);
+
+    const moodEntries = logs.flatMap(({ log }) => log?.mood ?? []);
+    const energyEntries = logs.flatMap(({ log }) => log?.energy ?? []);
+    const sexEntries = logs.flatMap(({ log }) => log?.sex ?? []);
     const foodEntries = logs.flatMap(({ log }) => log?.food ?? []);
+    const histamineEntries = logs.flatMap(({ log }) => log?.histamine ?? []);
+    const histamineFlareCount = histamineEntries.filter((entry) => entry.flare).length + foodEntries.filter((entry) => entry.histamineFlare === true).length;
+    const extraMedEntries = logs.flatMap(({ log }) => log?.extraMeds ?? []);
+    const customLogCount = logs.reduce((sum, { log }) => sum + Object.values(log?.customLogs ?? {}).reduce((inner, entries) => inner + entries.length, 0), 0);
+    const additionalFieldCount = logs.reduce((sum, { log }) => sum + Object.values(log?.adminFields ?? {}).reduce((inner, entries) => inner + entries.length, 0), 0);
+    const pregnancyLogDays = logs.filter(({ log }) => log?.pregnancy && Object.keys(log.pregnancy).length > 0).length;
+    const postpartumLogDays = logs.filter(({ log }) => log?.postpartum && Object.keys(log.postpartum).length > 0).length;
+
     const noteEntryCount = keys.reduce((sum, key) => sum + (data.dayNotes[key]?.length ?? 0), 0);
     const meds = summarizeMedicationProgress(data.meds, keys, data.medLog, data.medLogItems ?? {}, new Date());
 
@@ -75,122 +104,70 @@ export function HomeSummaryOverlay({ data, onClose, onOpenCalendar, initialMonth
       ? `${fromKey(periodStart).toLocaleDateString(language === "sk" ? "sk-SK" : "en-GB", { day: "numeric", month: "short" })}${periodEnd !== periodStart ? ` – ${fromKey(periodEnd).toLocaleDateString(language === "sk" ? "sk-SK" : "en-GB", { day: "numeric", month: "short" })}` : ""} · ${periodDays.length} ${periodDays.length === 1 ? t("day") : t("days")}`
       : "";
 
-    const entryCount = painEntries.length + bowelEntries.length + workoutEntries.length + sexEntries.length + foodEntries.length + sleepValues.length + noteEntryCount + periodDays.length + (meds.taken || 0);
+    const entryCount = painEntries.length + tetanyEntries.length + panicEntries.length + bowelEntries.length + thermoEntries.length + workoutEntries.length + sleepValues.length + temperatureValues.length + weightValues.length + moodEntries.length + energyEntries.length + sexEntries.length + foodEntries.length + histamineEntries.length + extraMedEntries.length + customLogCount + additionalFieldCount + pregnancyLogDays + postpartumLogDays + noteEntryCount + periodDays.length + (meds.taken || 0);
 
     return {
-      keys,
       logs,
-      painEntries,
-      painAvg,
-      headacheEntries,
-      headacheAvg,
-      hotFlashEntries,
-      hotFlashAvg,
-      bowelEntries,
-      bowelMode,
-      workoutEntries,
-      workoutMinutes,
-      sleepValues,
-      sleepAvg,
-      sexEntries,
-      foodEntries,
+      painEntries, painAvg,
+      tetanyEntries, tetanyAvg,
+      panicEntries, panicAvg,
+      headacheEntries, headacheAvg,
+      pressureEntries, pressureAvg,
+      hotFlashEntries, hotFlashAvg,
+      nauseaEntries, nauseaAvg,
+      pcosEntries,
+      bowelEntries, bowelMode,
+      thermoEntries,
+      workoutEntries, workoutMinutes,
+      sleepValues, sleepAvg,
+      temperatureValues, temperatureAvg,
+      weightValues, weightAvg,
+      moodEntries, energyEntries,
+      sexEntries, foodEntries,
+      histamineFlareCount,
+      extraMedEntries,
+      customLogCount,
+      additionalFieldCount,
+      pregnancyLogDays,
+      postpartumLogDays,
       noteEntryCount,
       meds,
-      periodDays,
-      periodText,
+      periodDays, periodText,
       entryCount,
     };
   }, [data, language, monthAnchor, t]);
 
+  const meta = (count: number) => `${count} ${count === 1 ? t("entry") : t("entries")}`;
+  const avg = (value: number | null | undefined, suffix: string) => value != null ? `${value.toFixed(1)} ${suffix}` : t("Logged");
+
   const rows = [
-    month.painEntries.length ? {
-      key: "pain",
-      icon: <FlameIcon size={21} />,
-      label: `${t("Pain")} (avg)`,
-      meta: `${month.painEntries.length} ${month.painEntries.length === 1 ? t("entry") : t("entries")}`,
-      value: month.painAvg != null ? `${month.painAvg.toFixed(1)} /10` : "—",
-      accent: "#F05A28",
-    } : null,
-    month.headacheEntries.length ? {
-      key: "headache",
-      icon: <Ico e="🤕" size={21} />,
-      label: `${t("Headache")} (avg)`,
-      meta: `${month.headacheEntries.length} ${month.headacheEntries.length === 1 ? t("entry") : t("entries")}`,
-      value: month.headacheAvg != null ? `${month.headacheAvg.toFixed(1)} /10` : t("Logged"),
-      accent: "#7467D8",
-    } : null,
-    month.hotFlashEntries.length ? {
-      key: "hotFlashes",
-      icon: <Ico e="🥵" size={21} />,
-      label: `${t("Hot flashes")} (avg)`,
-      meta: `${month.hotFlashEntries.length} ${month.hotFlashEntries.length === 1 ? t("entry") : t("entries")}`,
-      value: month.hotFlashAvg != null ? `${month.hotFlashAvg.toFixed(1)} /5` : t("Logged"),
-      accent: "#E65073",
-    } : null,
-    month.bowelEntries.length ? {
-      key: "bowel",
-      icon: <PoopIcon size={21} />,
-      label: `${t("Bowel")} (mode)`,
-      meta: `${month.bowelEntries.length} ${month.bowelEntries.length === 1 ? t("entry") : t("entries")}`,
-      value: month.bowelMode != null ? `${t("type")} ${month.bowelMode}` : t("Logged"),
-      accent: "#A66A4D",
-    } : null,
-    month.workoutEntries.length ? {
-      key: "workout",
-      icon: <Ico e="👟" size={21} />,
-      label: t("Workout"),
-      meta: `${month.workoutEntries.length} ${month.workoutEntries.length === 1 ? t("entry") : t("entries")}`,
-      value: month.workoutMinutes ? `${month.workoutMinutes} min` : t("Logged"),
-      accent: "#5F84D6",
-    } : null,
-    month.sleepValues.length ? {
-      key: "sleep",
-      icon: <ClockIcon size={21} />,
-      label: `${t("Sleep")} (avg)`,
-      meta: `${month.sleepValues.length} ${month.sleepValues.length === 1 ? t("entry") : t("entries")}`,
-      value: month.sleepAvg != null ? `${month.sleepAvg.toFixed(1)} h` : t("Logged"),
-      accent: "#7467D8",
-    } : null,
-    month.meds.taken > 0 ? {
-      key: "meds",
-      icon: <PillIcon size={21} />,
-      label: t("Medication"),
-      meta: `${month.meds.taken} ${t("taken")}`,
-      value: month.meds.pct != null ? `${month.meds.pct}%` : t("Logged"),
-      accent: "#83985A",
-    } : null,
-    month.sexEntries.length ? {
-      key: "sex",
-      icon: <HeartIcon size={21} />,
-      label: "ŠukŠuk",
-      meta: `${month.sexEntries.length} ${month.sexEntries.length === 1 ? t("entry") : t("entries")}`,
-      value: `${month.sexEntries.length}×`,
-      accent: "#6F963B",
-    } : null,
-    month.foodEntries.length ? {
-      key: "food",
-      icon: <Ico e="🍽️" size={21} />,
-      label: t("Food"),
-      meta: `${month.foodEntries.length} ${month.foodEntries.length === 1 ? t("entry") : t("entries")}`,
-      value: `${month.foodEntries.length}`,
-      accent: "#B88748",
-    } : null,
-    month.periodDays.length ? {
-      key: "period",
-      icon: <Ico e="🫐" size={21} />,
-      label: t("Period"),
-      meta: `${month.periodDays.length} ${month.periodDays.length === 1 ? t("day") : t("days")}`,
-      value: month.periodText,
-      accent: "#7467D8",
-    } : null,
-    month.noteEntryCount ? {
-      key: "notes",
-      icon: <NoteIcon size={21} />,
-      label: t("Notes"),
-      meta: `${month.noteEntryCount} ${month.noteEntryCount === 1 ? t("entry") : t("entries")}`,
-      value: t("Logged"),
-      accent: "#B89A36",
-    } : null,
+    month.painEntries.length ? { key: "pain", icon: <FlameIcon size={21} />, label: `${t("Pain")} (avg)`, meta: meta(month.painEntries.length), value: avg(month.painAvg, "/10"), accent: "#F05A28" } : null,
+    month.tetanyEntries.length ? { key: "tetany", icon: <Ico e="⚡️" size={21} />, label: t("Tetany episodes"), meta: meta(month.tetanyEntries.length), value: avg(month.tetanyAvg, "/5"), accent: "#3F83E8" } : null,
+    month.panicEntries.length ? { key: "panic", icon: <Ico e="✨" size={21} />, label: t("Panic attacks"), meta: meta(month.panicEntries.length), value: avg(month.panicAvg, "/10"), accent: "#8D58E8" } : null,
+    month.headacheEntries.length ? { key: "headache", icon: <Ico e="🧠" size={21} />, label: `${t("Headache")} (avg)`, meta: meta(month.headacheEntries.length), value: avg(month.headacheAvg, "/10"), accent: "#7467D8" } : null,
+    month.pressureEntries.length ? { key: "pressure", icon: <Ico e="💢" size={21} />, label: `${t("Pressure")} (avg)`, meta: meta(month.pressureEntries.length), value: avg(month.pressureAvg, "/10"), accent: "#E8439B" } : null,
+    month.hotFlashEntries.length ? { key: "hotFlashes", icon: <Ico e="🌡️" size={21} />, label: `${t("Hot flashes")} (avg)`, meta: meta(month.hotFlashEntries.length), value: avg(month.hotFlashAvg, "/5"), accent: "#E65073" } : null,
+    month.nauseaEntries.length ? { key: "nausea", icon: <Ico e="🤢" size={21} />, label: `${t("Nausea")} (avg)`, meta: meta(month.nauseaEntries.length), value: avg(month.nauseaAvg, "/5"), accent: "#6E9A4C" } : null,
+    month.pcosEntries.length ? { key: "pcos", icon: <Ico e="🌻" size={21} />, label: t("PCOS symptoms"), meta: meta(month.pcosEntries.length), value: t("Logged"), accent: "#C49A35" } : null,
+    month.histamineFlareCount ? { key: "histamine", icon: <Ico e="🌶️" size={21} />, label: t("Histamine flares"), meta: meta(month.histamineFlareCount), value: `${month.histamineFlareCount}×`, accent: "#D8613E" } : null,
+    month.bowelEntries.length ? { key: "bowel", icon: <PoopIcon size={21} />, label: `${t("Bowel")} (mode)`, meta: meta(month.bowelEntries.length), value: month.bowelMode != null ? `${t("type")} ${month.bowelMode}` : t("Logged"), accent: "#A66A4D" } : null,
+    month.temperatureValues.length ? { key: "temperature", icon: <Ico e="🌡️" size={21} />, label: `${t("Body temperature")} (avg)`, meta: meta(month.temperatureValues.length), value: avg(month.temperatureAvg, "°C"), accent: "#E65073" } : null,
+    month.weightValues.length ? { key: "weight", icon: <Ico e="⚖️" size={21} />, label: `${t("Weight")} (avg)`, meta: meta(month.weightValues.length), value: avg(month.weightAvg, "kg"), accent: "#657891" } : null,
+    month.sleepValues.length ? { key: "sleep", icon: <ClockIcon size={21} />, label: `${t("Sleep")} (avg)`, meta: meta(month.sleepValues.length), value: avg(month.sleepAvg, "h"), accent: "#7467D8" } : null,
+    month.moodEntries.length ? { key: "mood", icon: <Ico e="🙂" size={21} />, label: t("Mood"), meta: meta(month.moodEntries.length), value: t("Logged"), accent: "#B88748" } : null,
+    month.energyEntries.length ? { key: "energy", icon: <Ico e="⚡️" size={21} />, label: t("Energy"), meta: meta(month.energyEntries.length), value: t("Logged"), accent: "#D6A53E" } : null,
+    month.workoutEntries.length ? { key: "workout", icon: <Ico e="👟" size={21} />, label: t("Workout"), meta: meta(month.workoutEntries.length), value: month.workoutMinutes ? `${month.workoutMinutes} min` : t("Logged"), accent: "#5F84D6" } : null,
+    month.thermoEntries.length ? { key: "thermo", icon: <Ico e="♨️" size={21} />, label: t("Therapy sessions"), meta: meta(month.thermoEntries.length), value: `${month.thermoEntries.length}×`, accent: "#D7814A" } : null,
+    month.meds.taken > 0 ? { key: "meds", icon: <PillIcon size={21} />, label: t("Medication"), meta: `${month.meds.taken} ${t("taken")}`, value: month.meds.pct != null ? `${month.meds.pct}%` : t("Logged"), accent: "#83985A" } : null,
+    month.extraMedEntries.length ? { key: "extraMeds", icon: <PillIcon size={21} />, label: t("Extra medication"), meta: meta(month.extraMedEntries.length), value: `${month.extraMedEntries.length}×`, accent: "#9A7358" } : null,
+    month.sexEntries.length ? { key: "sex", icon: <HeartIcon size={21} />, label: t("Sex"), meta: meta(month.sexEntries.length), value: `${month.sexEntries.length}×`, accent: "#6F963B" } : null,
+    month.foodEntries.length ? { key: "food", icon: <Ico e="🍽️" size={21} />, label: t("Food"), meta: meta(month.foodEntries.length), value: `${month.foodEntries.length}`, accent: "#B88748" } : null,
+    month.periodDays.length ? { key: "period", icon: <Ico e="🫐" size={21} />, label: t("Blueberry"), meta: `${month.periodDays.length} ${month.periodDays.length === 1 ? t("day") : t("days")}`, value: month.periodText, accent: "#7467D8" } : null,
+    month.pregnancyLogDays ? { key: "pregnancy", icon: <Ico e="🤰" size={21} />, label: t("Pregnancy log"), meta: `${month.pregnancyLogDays} ${t("days logged")}`, value: t("Logged"), accent: "#B8768B" } : null,
+    month.postpartumLogDays ? { key: "postpartum", icon: <Ico e="🫶" size={21} />, label: t("Postpartum log"), meta: `${month.postpartumLogDays} ${t("days logged")}`, value: t("Logged"), accent: "#A8798F" } : null,
+    month.customLogCount ? { key: "customLogs", icon: <Ico e="➕" size={21} />, label: t("Custom logs"), meta: meta(month.customLogCount), value: `${month.customLogCount}`, accent: "#6F7F52" } : null,
+    month.additionalFieldCount ? { key: "additionalFields", icon: <Ico e="🧩" size={21} />, label: t("Additional fields"), meta: meta(month.additionalFieldCount), value: `${month.additionalFieldCount}`, accent: "#7D719A" } : null,
+    month.noteEntryCount ? { key: "notes", icon: <NoteIcon size={21} />, label: t("Notes"), meta: meta(month.noteEntryCount), value: t("Logged"), accent: "#B89A36" } : null,
   ].filter((row): row is NonNullable<typeof row> => row !== null);
 
   if (typeof document === "undefined") return null;
