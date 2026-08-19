@@ -1,0 +1,37 @@
+name: Apply recipe card redesign
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/apply-recipe-redesign.yml
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    if: github.event.head_commit.message == 'Apply recipe card redesign'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+      - name: Apply redesign
+        run: python scripts/apply-recipe-card-redesign.py
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+      - run: bun install --frozen-lockfile
+      - run: bun run typecheck
+      - run: bun run lint
+      - run: bun run build
+      - name: Commit validated redesign
+        run: |
+          git config user.name "BIXBO automation"
+          git config user.email "actions@users.noreply.github.com"
+          git rm .github/workflows/apply-recipe-redesign.yml scripts/apply-recipe-card-redesign.py
+          git add src/features/notes/RecipesView.tsx src/routes/notes.tsx
+          git commit -m "Match Recipes to stacked paper-card design"
+          git push origin HEAD:main
