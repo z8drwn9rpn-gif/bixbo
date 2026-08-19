@@ -1,13 +1,24 @@
-/* Pain wizard pages 2–5: the sticky Back / Next bar is visually shifted down
-   by the global date-control offset. Reserve that same offset in normal flow,
-   plus a small breathing gap, so the first question never sits underneath the
-   bar. Page 1 is intentionally excluded. Existing space-y-4 keeps the same
-   vertical rhythm between subsequent questions. */
-[data-bixbo-log-surface="pain"] > div.flex.min-h-full.flex-col.px-5.pb-4.pt-0:has([data-bixbo-log-field-id="parts"]) > div.sticky,
-[data-bixbo-log-surface="pain"] > div.flex.min-h-full.flex-col.px-5.pb-4.pt-0:has([data-bixbo-log-field-id="quality"]) > div.sticky,
-[data-bixbo-log-surface="pain"] > div.flex.min-h-full.flex-col.px-5.pb-4.pt-0:has([data-bixbo-log-field-id="symptoms"]) > div.sticky,
-[data-bixbo-log-surface="pain"] > div.flex.min-h-full.flex-col.px-5.pb-4.pt-0:has(> div.space-y-4.pt-1) > div.sticky {
+/* ---------------------------------------------------------------- Log header geometry
+   The global date pill sits between the sheet title and each log's sticky
+   Back/Save (or Back/Next) bar. The bar is moved down with
+   --bixbo-log-date-offset, so normal document flow must reserve the same offset.
+   Without this reservation, the first question starts underneath the sticky bar.
+
+   Standard logs already provide their own normal inter-section gap, therefore
+   reserve exactly the date offset. */
+[data-bixbo-log-surface="standard"] [data-bixbo-log-save-bar] {
+  margin-bottom: var(--bixbo-log-date-offset, 0px) !important;
+  background-color: var(--background) !important;
+}
+
+/* Pain owns a custom sticky Back/Next bar instead of SaveBar. Reserve the date
+   offset for every built-in Pain step, including pages 1 and 5. The extra 12px
+   is the intended breathing space below the navigation bar. This replaces the
+   old page-specific :has(...) rules, so pages 2–4 keep their current spacing
+   while pages 1 and 5 gain the same protection. */
+[data-bixbo-log-surface="pain"] > div.flex.min-h-full.flex-col.px-5.pb-4.pt-0 > div.sticky {
   margin-bottom: calc(var(--bixbo-log-date-offset, 0px) + 12px) !important;
+  background-color: var(--background) !important;
 }
 
 /* Scale explanation sheets must paint above the fixed date pill (z 260).
@@ -50,9 +61,7 @@
   margin: 0;
 }
 
-/* Month Summary: remove the actual blur source completely. The dark dim layer
-   remains, but no platform (including iPhone standalone PWA) rasterizes and
-   softens the BIXBO header behind the modal. */
+/* Month Summary keeps its dim layer but never applies a backdrop filter. */
 [data-bixbo-overlay-backdrop="month-summary"] {
   -webkit-backdrop-filter: none !important;
   backdrop-filter: none !important;
