@@ -1,4 +1,29 @@
-import { expect, test } from "@playwright/test";
+import { expect, test, type Page } from "@playwright/test";
+
+async function openLogMenu(page: Page) {
+  const firstCategory = page.locator("button[data-log-category]").first();
+  for (let attempt = 0; attempt < 8; attempt += 1) {
+    if (await firstCategory.isVisible()) return;
+    await page.evaluate(() => window.dispatchEvent(new CustomEvent("bixbo:toggle-log")));
+    try {
+      await firstCategory.waitFor({ state: "visible", timeout: 500 });
+      return;
+    } catch {
+      // Retry until Home's log-toggle effect is installed.
+    }
+  }
+  await expect(firstCategory).toBeVisible();
+}
+
+async function advancePain(page: Page, to: number) {
+  const nav = page.locator('[data-bixbo-log-surface="pain"] > div > div.sticky').first();
+  for (let step = 1; step < to; step += 1) {
+    await expect(nav.getByText(`${step}/5`, { exact: true })).toBeVisible();
+    await nav.getByRole("button", { name: "Next", exact: true }).click();
+    await expect(nav.getByText(`${step + 1}/5`, { exact: true })).toBeVisible();
+    if (step + 1 < to) await page.waitForTimeout(275);
+  }
+}
 
 test("mobile Pain note keeps the log geometry and background stable", async ({ page }, testInfo) => {
   test.skip(!testInfo.project.name.includes("mobile"), "mobile-only iOS keyboard regression");
@@ -7,9 +32,7 @@ test("mobile Pain note keeps the log geometry and background stable", async ({ p
   const bottomNav = page.locator('nav[aria-label="Primary navigation"]');
   await expect(bottomNav).toBeVisible();
 
-  // Open the same Log menu the mobile BottomNav button opens, without depending
-  // on localized button text.
-  await page.evaluate(() => window.dispatchEvent(new CustomEvent("bixbo:toggle-log")));
+  await openLogMenu(page);
   await page.locator('button[data-log-category="pain"]').click();
 
   const painSurface = page.locator('[data-bixbo-log-surface="pain"]');
@@ -39,10 +62,8 @@ test("mobile Pain note keeps the log geometry and background stable", async ({ p
   expect(Math.abs((shellAfterSyntheticKeyboard?.y ?? 0) - (shellBefore?.y ?? 0))).toBeLessThanOrEqual(1);
   expect(Math.abs((shellAfterSyntheticKeyboard?.height ?? 0) - (shellBefore?.height ?? 0))).toBeLessThanOrEqual(1);
 
+  await advancePain(page, 5);
   const note = page.getByPlaceholder("Anything else…");
-  for (let step = 0; step < 7 && !(await note.isVisible()); step += 1) {
-    await page.getByRole("button", { name: "Next", exact: true }).click();
-  }
   await expect(note).toBeVisible();
 
   // Reproduce the real iPhone path: Details is long, so the user scrolls down to

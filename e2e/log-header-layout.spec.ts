@@ -1,7 +1,22 @@
 import { expect, test, type Page } from "@playwright/test";
 
+async function openLogMenu(page: Page) {
+  const firstCategory = page.locator("button[data-log-category]").first();
+  for (let attempt = 0; attempt < 8; attempt += 1) {
+    if (await firstCategory.isVisible()) return;
+    await page.evaluate(() => window.dispatchEvent(new CustomEvent("bixbo:toggle-log")));
+    try {
+      await firstCategory.waitFor({ state: "visible", timeout: 500 });
+      return;
+    } catch {
+      // Home's listener is installed in an effect; retry until hydration is done.
+    }
+  }
+  await expect(firstCategory).toBeVisible();
+}
+
 async function openLogCategory(page: Page, id: string) {
-  await page.evaluate(() => window.dispatchEvent(new CustomEvent("bixbo:toggle-log")));
+  await openLogMenu(page);
   await page.locator(`button[data-log-category="${id}"]`).click();
   const surface = page.locator("[data-bixbo-log-surface]");
   await expect(surface).toBeVisible();
@@ -52,11 +67,22 @@ async function closeCurrentLog(page: Page) {
     await page.getByRole("button", { name: "Close", exact: true }).click();
   }
   await expect(surface).toBeHidden();
+  // The production click-through shield intentionally survives a log close.
+  await page.waitForTimeout(275);
+}
+
+async function advancePain(page: Page, nav: ReturnType<Page["locator"]>, from: number, to: number) {
+  for (let step = from; step < to; step += 1) {
+    await expect(nav.getByText(`${step}/5`, { exact: true })).toBeVisible();
+    await nav.getByRole("button", { name: "Next", exact: true }).click();
+    await expect(nav.getByText(`${step + 1}/5`, { exact: true })).toBeVisible();
+    if (step + 1 < to) await page.waitForTimeout(275);
+  }
 }
 
 test("all standard logs keep Date flush with Back/Save while reserving content space below", async ({ page }) => {
   await page.goto("/");
-  await expect(page.locator('nav[aria-label="Primary navigation"]')).toBeVisible();
+  await expect(page.locator("[data-bixbo-home-paint-island]")).toBeVisible();
 
   for (const id of ["meds", "period", "sex", "food", "bowel", "workout", "temp"]) {
     const surface = await openLogCategory(page, id);
@@ -77,10 +103,7 @@ test("Pain pages 1 and 5 keep Date flush with Back/Next and reserve the same con
   await expectDateTouchesBar(page, '[data-bixbo-log-surface="pain"] > div > div.sticky');
   await expectNextSiblingBelow(page, '[data-bixbo-log-surface="pain"] > div > div.sticky', 8);
 
-  for (let index = 0; index < 4; index += 1) {
-    await nav.getByRole("button", { name: "Next", exact: true }).click();
-  }
-  await expect(nav.getByText("5/5", { exact: true })).toBeVisible();
+  await advancePain(page, nav, 1, 5);
   await expectDateTouchesBar(page, '[data-bixbo-log-surface="pain"] > div > div.sticky');
   await expectNextSiblingBelow(page, '[data-bixbo-log-surface="pain"] > div > div.sticky', 8);
 });

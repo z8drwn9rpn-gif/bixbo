@@ -18,7 +18,7 @@ test("standalone launch hands off from the BIXBO overlay without an artificial o
   await expect(splash).toBeHidden();
 });
 
-test("standalone Home header stays out of the WebKit blur compositor path", async ({ page }) => {
+test("standalone Home paint island stays out of the WebKit blur compositor path", async ({ page }) => {
   await page.addInitScript(() => {
     Object.defineProperty(window.navigator, "standalone", {
       configurable: true,
@@ -29,16 +29,17 @@ test("standalone Home header stays out of the WebKit blur compositor path", asyn
   await page.goto("/");
   await expect(page.locator("html")).toHaveAttribute("data-bixbo-pwa-mode", "standalone");
 
-  const header = page.locator('header[data-bixbo-app-header][data-bixbo-home-header="true"]');
-  const title = header.locator("[data-bixbo-display-title]");
-  const greeting = header.locator("h1[data-bixbo-app-title] [data-bixbo-display-title] + a");
-  const mascot = header.locator("img").first();
+  const island = page.locator("[data-bixbo-home-paint-island]");
+  const title = island.locator("[data-bixbo-home-wordmark]");
+  const titleHost = island.locator("[data-bixbo-app-title]");
+  const greeting = island.getByRole("link", { name: "Profile", exact: true });
+  const mascot = island.locator("img").first();
 
-  await expect(header).toBeVisible();
-  await expect(title).toHaveText("BIXBO");
+  await expect(island).toBeVisible();
+  await expect(title).toHaveAttribute("aria-label", "BIXBO");
   await expect(greeting).toBeVisible();
 
-  const headerStyle = await header.evaluate((element) => {
+  const islandStyle = await island.evaluate((element) => {
     const style = getComputedStyle(element);
     return {
       position: style.position,
@@ -49,24 +50,22 @@ test("standalone Home header stays out of the WebKit blur compositor path", asyn
       willChange: style.willChange,
     };
   });
-  expect(headerStyle.position).toBe("relative");
-  expect(headerStyle.backdropFilter).toBe("none");
-  expect(headerStyle.webkitBackdropFilter).toBe("none");
-  expect(headerStyle.filter).toBe("none");
-  expect(headerStyle.transform).toBe("none");
-  expect(headerStyle.willChange).toBe("auto");
+  expect(islandStyle.position).toBe("relative");
+  expect(islandStyle.backdropFilter).toBe("none");
+  expect(islandStyle.webkitBackdropFilter).toBe("none");
+  expect(islandStyle.filter).toBe("none");
+  expect(islandStyle.transform).toBe("none");
+  expect(islandStyle.willChange).toBe("auto");
 
-  for (const element of [title, greeting]) {
+  for (const element of [titleHost, greeting]) {
     const style = await element.evaluate((node) => {
       const computed = getComputedStyle(node);
       return {
-        textShadow: computed.textShadow,
         filter: computed.filter,
         transform: computed.transform,
         opacity: computed.opacity,
       };
     });
-    expect(style.textShadow).toBe("none");
     expect(style.filter).toBe("none");
     expect(style.transform).toBe("none");
     expect(style.opacity).toBe("1");

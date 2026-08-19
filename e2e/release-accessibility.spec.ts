@@ -1,14 +1,32 @@
-import { expect, test } from "@playwright/test";
+import { expect, test, type Page } from "@playwright/test";
+
+async function openLogMenu(page: Page) {
+  const firstCategory = page.locator("button[data-log-category]").first();
+  for (let attempt = 0; attempt < 8; attempt += 1) {
+    if (await firstCategory.isVisible()) return;
+    await page.evaluate(() => window.dispatchEvent(new CustomEvent("bixbo:toggle-log")));
+    try {
+      await firstCategory.waitFor({ state: "visible", timeout: 500 });
+      return;
+    } catch {
+      // Retry until Home's log-toggle effect is installed.
+    }
+  }
+  await expect(firstCategory).toBeVisible();
+}
 
 test("critical controls keep accessible names, landmarks and a blur-free paint path", async ({ page }) => {
   await page.goto("/");
 
   await expect(page.locator("#main-content")).toBeVisible();
-  await expect(page.locator('nav[aria-label="Primary navigation"]')).toBeVisible();
+  const visibleNavigationCount = await page
+    .locator('nav[aria-label="Primary navigation"], nav[aria-label="Sidebar navigation"]')
+    .evaluateAll((nodes) => nodes.filter((node) => (node as HTMLElement).offsetParent !== null).length);
+  expect(visibleNavigationCount).toBeGreaterThan(0);
   await expect(page.getByRole("button", { name: "Previous month" })).toBeVisible();
   await expect(page.getByRole("button", { name: "Next month" })).toBeVisible();
-  await expect(page.getByRole("link", { name: "Profile" })).toBeVisible();
-  await expect(page.getByRole("link", { name: "PDF reports" })).toBeVisible();
+  await expect(page.locator("[data-bixbo-home-paint-island]").getByRole("link", { name: "Profile", exact: true })).toBeVisible();
+  await expect(page.getByRole("link", { name: "PDF reports", exact: true })).toBeVisible();
 
   const duplicateHtmlIds = await page.evaluate(() => {
     const seen = new Set<string>();
@@ -38,12 +56,14 @@ test("critical controls keep accessible names, landmarks and a blur-free paint p
   });
   expect(blurredVisibleElements).toEqual([]);
 
-  await page.evaluate(() => window.dispatchEvent(new CustomEvent("bixbo:toggle-log")));
+  await openLogMenu(page);
   await page.locator('button[data-log-category="pain"]').click();
   await expect(page.getByLabel("Log date")).toBeVisible();
-  await expect(page.getByRole("button", { name: "Back", exact: true })).toBeVisible();
   await expect(page.getByRole("button", { name: "Next", exact: true })).toBeVisible();
   await expect(page.getByRole("button", { name: "Close", exact: true })).toBeVisible();
+  await page.getByRole("button", { name: "Next", exact: true }).click();
+  await expect(page.getByText("2/5", { exact: true })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Back", exact: true })).toBeVisible();
 
   await page.goto("/profile");
   await expect(page.getByRole("link", { name: "Manage meds", exact: true })).toBeVisible();
@@ -57,7 +77,8 @@ test("Reduce Motion collapses app transition timing", async ({ page }) => {
   await page.emulateMedia({ reducedMotion: "reduce" });
   await page.goto("/");
 
-  const durationMs = await page.getByRole("link", { name: "Profile" }).evaluate((element) => {
+  const profileLink = page.locator("[data-bixbo-home-paint-island]").getByRole("link", { name: "Profile", exact: true });
+  const durationMs = await profileLink.evaluate((element) => {
     const values = getComputedStyle(element).transitionDuration.split(",");
     const toMs = (value: string) => {
       const trimmed = value.trim();

@@ -7,6 +7,31 @@ async function attachViewport(page: Page, testInfo: TestInfo, name: string) {
   });
 }
 
+async function openLogMenu(page: Page) {
+  const firstCategory = page.locator("button[data-log-category]").first();
+  for (let attempt = 0; attempt < 8; attempt += 1) {
+    if (await firstCategory.isVisible()) return;
+    await page.evaluate(() => window.dispatchEvent(new CustomEvent("bixbo:toggle-log")));
+    try {
+      await firstCategory.waitFor({ state: "visible", timeout: 500 });
+      return;
+    } catch {
+      // Retry until Home's log-toggle effect is installed.
+    }
+  }
+  await expect(firstCategory).toBeVisible();
+}
+
+async function advancePain(page: Page, to: number) {
+  const nav = page.locator('[data-bixbo-log-surface="pain"] > div > div.sticky').first();
+  for (let step = 1; step < to; step += 1) {
+    await expect(nav.getByText(`${step}/5`, { exact: true })).toBeVisible();
+    await nav.getByRole("button", { name: "Next", exact: true }).click();
+    await expect(nav.getByText(`${step + 1}/5`, { exact: true })).toBeVisible();
+    if (step + 1 < to) await page.waitForTimeout(275);
+  }
+}
+
 test("capture release visual evidence for the highest-risk BIXBO surfaces", async ({ page }, testInfo) => {
   await page.addInitScript(() => {
     if (!localStorage.getItem("bixbo:theme-choice")) localStorage.setItem("bixbo:theme-choice", "light");
@@ -22,15 +47,11 @@ test("capture release visual evidence for the highest-risk BIXBO surfaces", asyn
   await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
   await attachViewport(page, testInfo, "home-dark.png");
 
-  await page.evaluate(() => window.dispatchEvent(new CustomEvent("bixbo:toggle-log")));
+  await openLogMenu(page);
   await page.locator('button[data-log-category="pain"]').click();
   const painSurface = page.locator('[data-bixbo-log-surface="pain"]');
-  const painNav = painSurface.locator(":scope > div > div.sticky").first();
   await expect(painSurface).toBeVisible();
-  for (let index = 0; index < 3; index += 1) {
-    await painNav.getByRole("button", { name: "Next", exact: true }).click();
-  }
-  await expect(painNav.getByText("4/5", { exact: true })).toBeVisible();
+  await advancePain(page, 4);
   await attachViewport(page, testInfo, "pain-page-4-episodes.png");
 
   await page.evaluate(() => {
