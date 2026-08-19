@@ -15,15 +15,17 @@ describe("iOS PWA reload and lifecycle hardening", () => {
     const root = readFileSync("src/routes/__root.tsx", "utf8");
     const appWorker = readFileSync("src/lib/appServiceWorker.ts", "utf8");
     const pushWorker = readFileSync("public/bixbo-push-sw.js", "utf8");
-    const deployWorkflow = readFileSync(".github/workflows/deploy-cloudflare.yml", "utf8");
+    const packageJson = readFileSync("package.json", "utf8");
+    const stampScript = readFileSync("scripts/stamp-service-worker.mjs", "utf8");
     expect(root).toContain("ensureAppServiceWorker");
     expect(appWorker).toContain('updateViaCache: "none"');
     expect(appWorker).toContain("registration.update()");
     expect(pushWorker).toContain('__BIXBO_DEPLOY_SHA__');
     expect(pushWorker).toContain("claimClientsAndRefreshForDeployment");
     expect(pushWorker).toContain("client.navigate");
-    expect(deployWorkflow).toContain("Stamp app service worker with deploy SHA");
-    expect(deployWorkflow).toContain('grep -Fq "$DEPLOY_SHA" <<<"$sw"');
+    expect(packageJson).toContain("scripts/stamp-service-worker.mjs");
+    expect(stampScript).toContain("process.env.DEPLOY_SHA || process.env.GITHUB_SHA");
+    expect(stampScript).toContain('.output/public/bixbo-push-sw.js');
 
     // The old module remains defensive if reused by a future screen, but it is
     // not mounted globally and therefore cannot produce lifecycle reloads.
