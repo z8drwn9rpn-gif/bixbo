@@ -5,10 +5,13 @@ import { Textarea } from "@/components/ui/textarea";
 import { nowHHMM, updateDayLog, type DayLog } from "@/lib/storage";
 import { Chip, Field, SaveBar, toggleIn, type UpdateFn } from "./LogFormPrimitives";
 
+export type EyesPainIntensity = "none" | "something" | "severe";
+
 export interface EyesEpisode {
   id: string;
   time: string;
   affected: "left" | "right" | "both";
+  painIntensity: EyesPainIntensity;
   painWithMovement: boolean;
   visionChanges: string[];
   note?: string;
@@ -22,6 +25,12 @@ const VISION_CHANGES = [
   "Colors less vivid",
   "Visual field change",
 ] as const;
+
+const PAIN_INTENSITY_OPTIONS: Array<{ value: EyesPainIntensity; label: string; face: string }> = [
+  { value: "none", label: "No pain", face: "☺" },
+  { value: "something", label: "Feeling something there", face: "◉" },
+  { value: "severe", label: "Severe pain", face: "☹" },
+];
 
 export function EyesForm({
   date,
@@ -41,6 +50,7 @@ export function EyesForm({
   const { t } = useI18n();
   const [time, setTime] = useState(initialEntry?.time ?? nowHHMM());
   const [affected, setAffected] = useState<EyesEpisode["affected"]>(initialEntry?.affected ?? "both");
+  const [painIntensity, setPainIntensity] = useState<EyesPainIntensity>(initialEntry?.painIntensity ?? "none");
   const [painWithMovement, setPainWithMovement] = useState(initialEntry?.painWithMovement ?? false);
   const [visionChanges, setVisionChanges] = useState<string[]>(initialEntry?.visionChanges ?? []);
   const [note, setNote] = useState(initialEntry?.note ?? "");
@@ -51,11 +61,12 @@ export function EyesForm({
       id: draftId,
       time,
       affected,
+      painIntensity,
       painWithMovement,
       visionChanges,
       note: note.trim() || undefined,
     }),
-    [affected, draftId, note, painWithMovement, time, visionChanges],
+    [affected, draftId, note, painIntensity, painWithMovement, time, visionChanges],
   );
 
   useEffect(() => {
@@ -98,7 +109,33 @@ export function EyesForm({
           </div>
         </Field>
 
+        <Field label="Pain intensity">
+          <p className="mt-1 text-xs text-muted-foreground">{t("How intense is the pain?")}</p>
+          <div className="mt-2 grid grid-cols-3 gap-2">
+            {PAIN_INTENSITY_OPTIONS.map((option) => {
+              const active = painIntensity === option.value;
+              return (
+                <button
+                  key={option.value}
+                  type="button"
+                  onClick={() => setPainIntensity(option.value)}
+                  aria-pressed={active}
+                  className={`min-h-[104px] rounded-2xl border px-2 py-3 text-center transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
+                    active
+                      ? "border-primary/35 bg-primary/10 text-foreground"
+                      : "border-border bg-surface text-foreground hover:bg-tint"
+                  }`}
+                >
+                  <span className="block text-2xl leading-none text-primary" aria-hidden="true">{option.face}</span>
+                  <span className="mt-2 block text-xs font-semibold leading-tight">{t(option.label)}</span>
+                </button>
+              );
+            })}
+          </div>
+        </Field>
+
         <Field label="Pain with eye movement">
+          <p className="mt-1 text-xs text-muted-foreground">{t("Does it hurt when you move your eyes?")}</p>
           <div className="mt-2 flex gap-2">
             <Chip active={!painWithMovement} onClick={() => setPainWithMovement(false)}>
               {t("No")}
