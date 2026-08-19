@@ -1,7 +1,10 @@
 /* BIXBO uses solid/dimmed surfaces instead of backdrop-filter blur.
    WebKit/iPhone PWA can rasterize large filtered layers and make text/content
    behind them look soft. Keep all existing backgrounds, opacity and shadows,
-   but remove backdrop filtering everywhere in the app. */
+   but remove backdrop filtering everywhere in the app, including the root/body
+   themselves rather than relying only on descendant overrides. */
+html,
+body[data-bixbo-app-root],
 body[data-bixbo-app-root] *,
 body[data-bixbo-app-root] *::before,
 body[data-bixbo-app-root] *::after {
@@ -9,10 +12,27 @@ body[data-bixbo-app-root] *::after {
   backdrop-filter: none !important;
 }
 
+/* These are the large WebKit compositing layers that can stay visually soft
+   even after a utility backdrop-blur class is overridden. Force the layer
+   itself back to a normal paint surface as well. Do not clear filters globally:
+   icons/mascot artwork can still keep their intentional drop shadows. */
+body[data-bixbo-app-root] [data-bixbo-app-header],
+body[data-bixbo-app-root] [data-bixbo-fullscreen-log="true"],
+body[data-bixbo-app-root] [data-bixbo-log-date-control],
+body[data-bixbo-app-root] [data-bixbo-log-save-bar],
+body[data-bixbo-app-root] [data-bixbo-overlay-backdrop] {
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+  -webkit-filter: none !important;
+  filter: none !important;
+  will-change: auto !important;
+}
+
 /* Full-screen log titles should remain optically crisp even if a browser
    inherits display-title effects from surrounding surfaces. */
 [data-bixbo-fullscreen-log="true"] h2 {
   -webkit-text-stroke: 0 !important;
   text-shadow: none !important;
+  -webkit-filter: none !important;
   filter: none !important;
 }

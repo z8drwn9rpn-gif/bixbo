@@ -8,6 +8,20 @@ async function openLogCategory(page: Page, id: string) {
   return surface;
 }
 
+async function expectDateTouchesBar(page: Page, selector: string) {
+  const geometry = await page.evaluate((barSelector) => {
+    const date = document.querySelector<HTMLElement>("[data-bixbo-log-date-control]");
+    const bar = document.querySelector<HTMLElement>(barSelector);
+    if (!date || !bar) return null;
+    const dateRect = date.getBoundingClientRect();
+    const barRect = bar.getBoundingClientRect();
+    return { dateBottom: dateRect.bottom, barTop: barRect.top };
+  }, selector);
+
+  expect(geometry).not.toBeNull();
+  expect(Math.abs((geometry?.barTop ?? 0) - (geometry?.dateBottom ?? 0))).toBeLessThanOrEqual(1.5);
+}
+
 async function expectNextSiblingBelow(page: Page, selector: string, minimumGap = 1) {
   const geometry = await page.locator(selector).first().evaluate((bar) => {
     const next = bar.nextElementSibling as HTMLElement | null;
@@ -40,7 +54,7 @@ async function closeCurrentLog(page: Page) {
   await expect(surface).toBeHidden();
 }
 
-test("standard logs reserve the date offset below Back/Save", async ({ page }) => {
+test("standard logs keep Date flush with Back/Save while reserving content space below", async ({ page }) => {
   await page.goto("/");
   await expect(page.locator('nav[aria-label="Primary navigation"]')).toBeVisible();
 
@@ -48,22 +62,25 @@ test("standard logs reserve the date offset below Back/Save", async ({ page }) =
     const surface = await openLogCategory(page, id);
     const saveBar = surface.locator("[data-bixbo-log-save-bar]");
     await expect(saveBar).toBeVisible();
+    await expectDateTouchesBar(page, "[data-bixbo-log-surface] [data-bixbo-log-save-bar]");
     await expectNextSiblingBelow(page, "[data-bixbo-log-surface] [data-bixbo-log-save-bar]", 8);
     await closeCurrentLog(page);
   }
 });
 
-test("Pain pages 1 and 5 reserve the same sticky-nav space as pages 2-4", async ({ page }) => {
+test("Pain pages 1 and 5 keep Date flush with Back/Next and reserve the same content space", async ({ page }) => {
   await page.goto("/");
   const surface = await openLogCategory(page, "pain");
   const nav = surface.locator(":scope > div > div.sticky").first();
   await expect(nav).toBeVisible();
 
+  await expectDateTouchesBar(page, '[data-bixbo-log-surface="pain"] > div > div.sticky');
   await expectNextSiblingBelow(page, '[data-bixbo-log-surface="pain"] > div > div.sticky', 8);
 
   for (let index = 0; index < 4; index += 1) {
     await nav.getByRole("button", { name: "Next", exact: true }).click();
   }
   await expect(nav.getByText("5/5", { exact: true })).toBeVisible();
+  await expectDateTouchesBar(page, '[data-bixbo-log-surface="pain"] > div > div.sticky');
   await expectNextSiblingBelow(page, '[data-bixbo-log-surface="pain"] > div > div.sticky', 8);
 });

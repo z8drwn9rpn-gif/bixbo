@@ -23,21 +23,30 @@ describe("notification deep links", () => {
     expect(worker).toContain("const url = notificationUrl(data)");
   });
 
-  it("opens calendar event notifications in the matching event editor", () => {
+  it("opens calendar event notifications in Calendar events instead of Event edit", () => {
     const worker = readFileSync("public/bixbo-push-sw.js", "utf8");
-    const home = readFileSync("src/features/home/HomePage.tsx", "utf8");
+    const bridge = readFileSync("src/components/MedicationNotificationActionBridge.tsx", "utf8");
+    const calendarTarget = readFileSync("src/components/CalendarTargetBridge.tsx", "utf8");
 
     expect(worker).toContain('tag.startsWith("event-event:")');
-    expect(worker).toContain('return `/?event=${encodeURIComponent(eventId)}`');
-    expect(home).toContain('currentUrl.searchParams.get("event")');
-    expect(home).toContain('(view.events ?? []).find((entry) => String(entry.id) === eventId)');
-    expect(home).toContain('setQuickCat("event")');
-    expect(home).toContain('setEditEntry(calendarEvent)');
-    expect(home).toContain('currentUrl.searchParams.delete("event")');
+    expect(worker).toContain('return `/?calendar=events&calendarEvent=${encodeURIComponent(eventId)}`');
+    expect(bridge).toContain('initial.searchParams.get("calendarEvent")');
+    expect(bridge).toContain('initial.searchParams.delete("event")');
+    expect(bridge).toContain('initial.searchParams.set("calendar", "events")');
+    expect(bridge).toContain('window.location.hash = `date=${date}`');
+    expect(bridge).toContain('document.querySelector<HTMLButtonElement>(".bixbo-calendar > div > button")');
+    expect(calendarTarget).toContain('window.location.hash === "#latest"');
+    expect(calendarTarget).toContain('const explicit = /^#date=');
   });
 
-  it("routes legacy remote medication notifications to Meds instead of Home", () => {
+  it("routes medication notification taps to the daily Meds log, not Manage meds", () => {
     const worker = readFileSync("public/bixbo-push-sw.js", "utf8");
-    expect(worker).toContain('if (category === "meds" && explicit === "/") return "/meds"');
+    const bridge = readFileSync("src/components/MedicationNotificationActionBridge.tsx", "utf8");
+
+    expect(worker).toContain('if (category === "meds" && (explicit === "/" || explicit === "/meds")) return "/?log=meds"');
+    expect(bridge).toContain('parsed.pathname === "/meds"');
+    expect(bridge).toContain('parsed.searchParams.set("log", "meds")');
+    expect(bridge).toContain('button[data-log-category="meds"]');
+    expect(bridge).toContain('new CustomEvent("bixbo:toggle-log")');
   });
 });
