@@ -73,6 +73,24 @@ jobs:
             exit 1
           fi
 
+      - name: Verify full quality gate for target
+        id: quality_gate
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          QUALITY_BODY="$(gh api "repos/${GITHUB_REPOSITORY}/issues/241" --jq '.body')"
+          EXPECTED_COMMIT="**Commit:** \`${DEPLOY_SHA}\`"
+          grep -Fq "$EXPECTED_COMMIT" <<<"$QUALITY_BODY" || {
+            echo "Quality gate status does not belong to deploy target $DEPLOY_SHA."
+            exit 1
+          }
+          grep -Fq "**Job:** success" <<<"$QUALITY_BODY" || {
+            echo "Quality gate for $DEPLOY_SHA is not successful."
+            exit 1
+          }
+
       - name: Verify deployment configuration
         id: config
         shell: bash
@@ -221,6 +239,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           JOB_STATUS: ${{ job.status }}
           TARGET_OUTCOME: ${{ steps.target.outcome }}
+          QUALITY_OUTCOME: ${{ steps.quality_gate.outcome }}
           CONFIG_OUTCOME: ${{ steps.config.outcome }}
           INSTALL_OUTCOME: ${{ steps.install.outcome }}
           GUARDS_OUTCOME: ${{ steps.guards.outcome }}
@@ -243,6 +262,7 @@ jobs:
           | Step | Outcome |
           |---|---|
           | Current-main check | ${TARGET_OUTCOME:-not-run} |
+          | Full quality gate | ${QUALITY_OUTCOME:-not-run} |
           | Production config | ${CONFIG_OUTCOME:-not-run} |
           | Install | ${INSTALL_OUTCOME:-not-run} |
           | Safety guards | ${GUARDS_OUTCOME:-not-run} |

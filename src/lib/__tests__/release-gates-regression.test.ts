@@ -83,6 +83,16 @@ describe("10/10 release gates", () => {
     expect(deploy).not.toContain("  push:\n    branches: [main]");
   });
 
+  it("requires every deploy path to match the externally recorded green quality SHA", () => {
+    const deploy = read(".github/workflows/deploy-cloudflare.yml");
+
+    expect(deploy).toContain("Verify full quality gate for target");
+    expect(deploy).toContain("issues/241");
+    expect(deploy).toContain('EXPECTED_COMMIT="**Commit:** \\`${DEPLOY_SHA}\\`"');
+    expect(deploy).toContain('grep -Fq "**Job:** success"');
+    expect(deploy).toContain("Full quality gate");
+  });
+
   it("makes deployment success prove the live PWA contract and publish its exact SHA", () => {
     const deploy = read(".github/workflows/deploy-cloudflare.yml");
 
