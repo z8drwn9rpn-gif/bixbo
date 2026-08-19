@@ -206,6 +206,7 @@ jobs:
             grep -q '"start_url": "/"' <<<"$manifest" || return 1
             grep -q '"display": "standalone"' <<<"$manifest" || return 1
             grep -q 'BIXBO_PUSH_SW_VERSION' <<<"$sw" || return 1
+            grep -Fq "$DEPLOY_SHA" <<<"$sw" || return 1
             grep -q 'importScripts("/bixbo-offline-runtime.js")' <<<"$sw" || return 1
             grep -q 'self.addEventListener("fetch"' <<<"$offline_runtime" || return 1
             grep -q 'networkFirstNavigation' <<<"$offline_runtime" || return 1
