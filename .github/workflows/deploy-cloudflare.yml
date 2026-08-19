@@ -1,9 +1,7 @@
 name: BIXBO Cloudflare production deploy
 
 on:
-  workflow_run:
-    workflows: ["BIXBO checks"]
-    types: [completed]
+  push:
     branches: [main]
   workflow_dispatch:
     inputs:
@@ -17,16 +15,16 @@ permissions:
 
 concurrency:
   group: bixbo-cloudflare-production
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 jobs:
   deploy:
-    if: (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.head_branch == 'main') || (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main')
+    if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 30
     environment: production
     env:
-      DEPLOY_SHA: ${{ github.event_name == 'workflow_run' && github.event.workflow_run.head_sha || github.sha }}
+      DEPLOY_SHA: ${{ github.sha }}
       CONFIRM_PRODUCTION: ${{ inputs.confirm_production }}
       CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
       CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
@@ -126,8 +124,12 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          bun run architecture
           bun run audit:independence
+          bun run audit:i18n
+          bun run audit:ui-emoji
           bun run typecheck
+          bun run lint
           bun run test
 
       - name: Build production Worker
@@ -135,6 +137,9 @@ jobs:
 
       - name: Verify production bundle
         run: bun run bundle:check
+
+      - name: Smoke built app
+        run: timeout 75s bun run smoke:ssr
 
       - name: Recheck main immediately before deployment
         shell: bash
