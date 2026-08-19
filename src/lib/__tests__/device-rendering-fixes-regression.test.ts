@@ -2,6 +2,7 @@ import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
 const css = readFileSync("src/device-rendering-fixes.css", "utf8");
+const iosCss = readFileSync("src/ios-pwa-rendering-fixes.css", "utf8");
 const root = readFileSync("src/routes/__root.tsx", "utf8");
 const appShell = readFileSync("src/app-shell.css", "utf8");
 const appShellComponent = readFileSync("src/components/AppShell.tsx", "utf8");
@@ -37,29 +38,30 @@ describe("cross-device rendering fixes", () => {
   });
 
   it("keeps the Home BIXBO title and profile greeting sharp on WebKit", () => {
-    expect(css).toContain('h1[data-bixbo-app-title] [data-bixbo-display-title]');
-    expect(css).toContain('h1[data-bixbo-app-title] [data-bixbo-display-title] + a');
-    expect(css).toContain("text-shadow: none !important");
-    expect(css).toContain("-webkit-text-stroke: 0 !important");
-    expect(css).toContain("filter: none !important");
+    expect(appShellComponent).toContain("data-bixbo-home-paint-island");
+    expect(appShellComponent).toContain('role="banner"');
     expect(appShellComponent).toContain("data-bixbo-app-header");
     expect(appShellComponent).toContain("border-b border-border/65 bg-background");
     expect(appShellComponent).not.toContain("backdrop-blur-xl");
+    expect(iosCss).toContain("[data-bixbo-home-paint-island] [data-bixbo-app-title]");
+    expect(iosCss).toContain("text-shadow: none !important");
+    expect(iosCss).toContain("-webkit-text-stroke: 0 !important");
+    expect(iosCss).toContain("filter: none !important");
     expect(home).toContain("function BixboHomeWordmark()");
     expect(home).toContain("data-bixbo-home-wordmark");
     expect(home).toContain('<BixboHomeWordmark />');
     expect(home).not.toContain('>BIXBO</span>');
   });
 
-  it("keeps the Home header out of the standalone iOS PWA compositor path", () => {
+  it("keeps Home entirely out of the standalone iOS header compositor path", () => {
     expect(root).toContain('root.dataset.bixboPwaMode = standalone ? "standalone" : "browser"');
     expect(appShellComponent).toContain('const isHomeHeader = pathname === "/" && title !== undefined');
-    expect(appShellComponent).toContain('data-bixbo-home-header={isHomeHeader ? "true" : undefined}');
-    expect(root).toContain('html[data-bixbo-pwa-mode="standalone"] header[data-bixbo-app-header][data-bixbo-home-header="true"]');
-    expect(root).not.toContain(':has(h1[data-bixbo-app-title] [data-bixbo-display-title])');
-    expect(root).toContain("position: relative !important");
-    expect(root).toContain("-webkit-backdrop-filter: none !important");
-    expect(root).toContain("will-change: auto !important");
-    expect(root).toContain("-webkit-font-smoothing: auto !important");
+    expect(appShellComponent).toContain("data-bixbo-home-paint-island");
+    expect(appShellComponent).not.toContain("data-bixbo-home-header");
+    expect(iosCss).toContain("position: relative !important");
+    expect(iosCss).toContain("z-index: auto !important");
+    expect(iosCss).toContain("-webkit-backdrop-filter: none !important");
+    expect(iosCss).toContain("will-change: auto !important");
+    expect(iosCss).toContain("-webkit-font-smoothing: auto !important");
   });
 });
