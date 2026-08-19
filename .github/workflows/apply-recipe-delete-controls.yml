@@ -3,6 +3,8 @@ name: Apply recipe delete controls
 on:
   push:
     branches: [fix/recipe-meta-labels-single-line]
+  pull_request:
+    branches: [main]
 
 permissions:
   contents: write
