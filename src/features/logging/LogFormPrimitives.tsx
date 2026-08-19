@@ -448,14 +448,21 @@ export function IntensityScale({
   schemaFieldId?: string;
 }) {
   const { t } = useI18n();
+  const [standaloneLegendOpen, setStandaloneLegendOpen] = useState(false);
   const normalizedRange = normalizeLogScaleRange(from, max);
   const effectiveFrom = normalizedRange.from;
   const effectiveMax = normalizedRange.max;
   const effectiveStep = effectiveMax === 5 || effectiveMax === 10 ? 1 : step;
+  const ownsCrampLegend = legendTitle === "Cramp pain scale" && Boolean(descriptions);
   const nums = Array.from(
     { length: Math.floor((effectiveMax - effectiveFrom) / effectiveStep) + 1 },
     (_, i) => Number((effectiveFrom + i * effectiveStep).toFixed(2)),
   );
+
+  useEffect(() => {
+    if (!standaloneLegendOpen) return;
+    return markScaleLegendOpen();
+  }, [standaloneLegendOpen]);
 
   return (
     <div className="mt-2 space-y-1.5">
@@ -485,6 +492,56 @@ export function IntensityScale({
           );
         })}
       </div>
+      {ownsCrampLegend ? (
+        <div className="flex justify-end">
+          <button
+            type="button"
+            onClick={() => setStandaloneLegendOpen((open) => !open)}
+            aria-label={t("Cramp pain scale")}
+            aria-expanded={standaloneLegendOpen}
+            className="grid h-5 w-5 place-items-center rounded-full bg-primary/10 text-[11px] font-bold leading-none text-primary ring-1 ring-primary/25 transition hover:bg-primary/20"
+          >
+            i
+          </button>
+        </div>
+      ) : null}
+      {standaloneLegendOpen && ownsCrampLegend && descriptions ? (
+        <div
+          className="fixed inset-0 z-[90] flex items-end justify-center bg-black/20 px-3 pb-[calc(12px+env(safe-area-inset-bottom))] backdrop-blur-[1px]"
+          role="presentation"
+          onClick={() => setStandaloneLegendOpen(false)}
+        >
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-label={t("Cramp pain scale")}
+            className="max-h-[90dvh] w-[calc(100vw-16px)] max-w-lg overflow-y-auto rounded-[1.8rem] border border-border/70 bg-background p-5 shadow-2xl"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className="mb-3 flex items-center justify-between gap-3">
+              <div className="flex items-center gap-2">
+                <span className="grid h-9 w-9 place-items-center rounded-full bg-primary/15 text-base font-bold text-primary">i</span>
+                <h3 className="font-serif text-xl font-semibold">{t("Cramp pain scale")}</h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setStandaloneLegendOpen(false)}
+                aria-label={t("Close")}
+                className="grid h-10 w-10 place-items-center rounded-full bg-tint text-foreground ring-1 ring-border"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+            <ScaleLegend
+              max={effectiveMax}
+              from={effectiveFrom}
+              descriptions={descriptions}
+              value={value}
+              title="Cramp pain scale"
+            />
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }
