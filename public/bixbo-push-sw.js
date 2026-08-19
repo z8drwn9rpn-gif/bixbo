@@ -4,7 +4,7 @@
 
 importScripts("/bixbo-offline-runtime.js");
 
-const BIXBO_PUSH_SW_VERSION = "2026.08.19.3";
+const BIXBO_PUSH_SW_VERSION = "__BIXBO_DEPLOY_SHA__";
 const MED_ACTION_DB = "bixbo-notification-actions";
 const MED_ACTION_STORE = "pending-med-actions";
 
@@ -27,8 +27,32 @@ self.addEventListener("install", (event) => {
   event.waitUntil(self.skipWaiting());
 });
 
+const BIXBO_SW_REFRESH_PARAM = "__bixbo_sw_update";
+
+async function claimClientsAndRefreshForDeployment() {
+  await self.clients.claim();
+
+  // Only production output is stamped. Avoid reloads in local/CI service-worker
+  // installs, while making each real release reliably replace stale iOS PWA UI.
+  if (BIXBO_PUSH_SW_VERSION.startsWith("__BIXBO_")) return;
+
+  const clientList = await self.clients.matchAll({ type: "window", includeUncontrolled: true });
+  await Promise.allSettled(clientList.map(async (client) => {
+    if (typeof client.navigate !== "function") return;
+    try {
+      const url = new URL(client.url);
+      if (url.origin !== self.location.origin) return;
+      if (url.searchParams.get(BIXBO_SW_REFRESH_PARAM) === BIXBO_PUSH_SW_VERSION) return;
+      url.searchParams.set(BIXBO_SW_REFRESH_PARAM, BIXBO_PUSH_SW_VERSION);
+      await client.navigate(url.toString());
+    } catch {
+      // A closed/suspended client must not make activation fail.
+    }
+  }));
+}
+
 self.addEventListener("activate", (event) => {
-  event.waitUntil(self.clients.claim());
+  event.waitUntil(claimClientsAndRefreshForDeployment());
 });
 
 function safeUrl(value) {
