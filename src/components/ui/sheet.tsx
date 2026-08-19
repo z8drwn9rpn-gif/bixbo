@@ -18,12 +18,13 @@ const SheetPortal = SheetPrimitive.Portal;
 const SheetOverlay = React.forwardRef<
   React.ElementRef<typeof SheetPrimitive.Overlay>,
   React.ComponentPropsWithoutRef<typeof SheetPrimitive.Overlay>
->(({ className, ...props }, ref) => (
+>(({ className, style, ...props }, ref) => (
   <SheetPrimitive.Overlay
     className={cn(
-      "fixed inset-0 z-50 bg-black/45 backdrop-blur-sm data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0",
+      "fixed inset-0 z-50 bg-black/45 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0",
       className,
     )}
+    style={{ ...style, backdropFilter: "none", WebkitBackdropFilter: "none" }}
     {...props}
     ref={ref}
   />
@@ -50,7 +51,7 @@ const sheetVariants = cva(
 );
 
 interface SheetContentProps
-  extends React.ComponentPropsWithoutRef<typeof SheetPrimitive.Content>, VariantProps<typeof sheetVariants> {
+  extends React.ComponentPropsWithoutRef<typeof SheetPrimitive.Content>, VariantProps<typeof sheetVariants) {
   overlayClassName?: string;
 }
 
@@ -105,7 +106,7 @@ const SheetContent = React.forwardRef<React.ElementRef<typeof SheetPrimitive.Con
     }
 
     const stableFullScreenOverlay = fullScreenLog
-      ? "!bg-transparent !backdrop-blur-none !transition-none data-[state=open]:!animate-none data-[state=closed]:!animate-none"
+      ? "!bg-transparent !transition-none data-[state=open]:!animate-none data-[state=closed]:!animate-none"
       : undefined;
 
     return (
@@ -151,12 +152,16 @@ const SheetContent = React.forwardRef<React.ElementRef<typeof SheetPrimitive.Con
 SheetContent.displayName = SheetPrimitive.Content.displayName;
 
 const SheetHeader = ({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) => (
-  <div className={cn("mb-2 flex flex-col gap-2 text-center sm:text-left", className)} {...props} />
+  <div className={cn("flex flex-col gap-2 text-center sm:text-left", className)} {...props} />
 );
 SheetHeader.displayName = "SheetHeader";
 
-const SheetFooter = ({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) => (
-  <div className={cn("mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end", className)} {...props} />
+const SheetFooter = ({ className, style, ...props }: React.HTMLAttributes<HTMLDivElement>) => (
+  <div
+    className={cn("mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end", className)}
+    style={{ ...style, backdropFilter: "none", WebkitBackdropFilter: "none" }}
+    {...props}
+  />
 );
 SheetFooter.displayName = "SheetFooter";
 
