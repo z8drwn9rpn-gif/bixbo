@@ -4,7 +4,16 @@
    --bixbo-log-date-offset, so normal document flow must reserve the same offset.
    Without this reservation, the first question starts underneath the sticky bar.
 
-   Standard logs already provide their own normal inter-section gap, therefore
+   SheetHeader has a shared mb-2 by default. Full-screen logs must not keep that
+   extra 8px because the date row already owns the complete space between the
+   app header and sticky navigation. Remove only that header margin; do not pull
+   the form surface upward. This makes Date -> Back/Next/Save contiguous while
+   preserving all question/content clearance below the sticky bar. */
+[data-bixbo-fullscreen-log="true"] > div.flex.h-full.min-h-0.flex-col > div.mb-2 {
+  margin-bottom: 0 !important;
+}
+
+/* Standard logs already provide their own normal inter-section gap, therefore
    reserve exactly the date offset. */
 [data-bixbo-log-surface="standard"] [data-bixbo-log-save-bar] {
   margin-bottom: var(--bixbo-log-date-offset, 0px) !important;
@@ -13,9 +22,7 @@
 
 /* Pain owns a custom sticky Back/Next bar instead of SaveBar. Reserve the date
    offset for every built-in Pain step, including pages 1 and 5. The extra 12px
-   is the intended breathing space below the navigation bar. This replaces the
-   old page-specific :has(...) rules, so pages 2–4 keep their current spacing
-   while pages 1 and 5 gain the same protection. */
+   is the intended breathing space below the navigation bar. */
 [data-bixbo-log-surface="pain"] > div.flex.min-h-full.flex-col.px-5.pb-4.pt-0 > div.sticky {
   margin-bottom: calc(var(--bixbo-log-date-offset, 0px) + 12px) !important;
   background-color: var(--background) !important;
