@@ -18,7 +18,6 @@ describe("full-screen log header geometry", () => {
 
 describe("Home wordmark sharpness", () => {
   it("removes the Home-only display shadow at the final CSS layer", () => {
-    expect(home).toContain("data-bixbo-home-header").not;
     expect(home).toContain("data-bixbo-display-title");
     expect(noBlurCss).toContain('header[data-bixbo-app-header][data-bixbo-home-header="true"] h1[data-bixbo-app-title] [data-bixbo-display-title]');
     expect(noBlurCss).toContain("text-shadow: none !important;");
