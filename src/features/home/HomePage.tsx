@@ -25,6 +25,7 @@ import {
 import { VitalTile, MedsProgress } from "@/components/home/HomeTiles";
 import { BirthControlSummaryCard, BirthControlOverlay } from "@/components/home/BirthControlCard";
 import { DayPreview } from "@/components/home/DayOverview";
+import { DayOverviewEyesCard } from "@/components/home/DayOverviewEyesCard";
 import { ShareDayButton } from "@/components/home/DayOverviewShareButton";
 import { BlueberryDayOverviewFallback } from "@/components/home/BlueberryDayOverviewFallback";
 import { NextPeriodHomeCard, PostpartumHomeCard, PregnancyHomeCard } from "@/components/home/HomeModeCards";
@@ -247,6 +248,7 @@ export function HomePage() {
         </div>
 
         {!maleMode && isAdminOwnerAccount() && <div style={{ order: layoutOrder(view, "home", "birthControl", 20) }}><BirthControlSummaryCard data={view} dateKey={selected} onOpen={() => { setHakAnchor(fromKey(selected)); setHakOpen(true); }} /></div>}
+
         <PregnancyHomeCard data={view} />
         <PostpartumHomeCard data={view} />
         {!cycleTrackingHidden && <NextPeriodHomeCard data={view} />}
@@ -273,6 +275,7 @@ export function HomePage() {
         <div className="[&_.p-4]:!py-3 [&_.space-y-2]:!space-y-1 [&_.mt-2]:!mt-1 [&_.my-2]:!my-1 [&_.pt-3]:!pt-2 [&_.gap-3]:!gap-2">
           <BlueberryDayOverviewFallback date={selected} data={view} onEdit={() => openEdit("period", undefined)} />
           <DayPreview date={selected} data={view} update={update} onEditPain={(pain) => { setEpisodeEdit(null); setEditPain(pain); setEditEntry(undefined); setQuickCat("pain"); setLogOpen(true); }} onEdit={openEdit} />
+          <DayOverviewEyesCard entries={view.dayLogs[selected]?.eyes ?? []} date={selected} update={update} />
         </div>
       </aside>
     </div>
