@@ -1,0 +1,52 @@
+/* iPhone/iOS standalone PWA rendering corrections.
+   Keep these rules isolated from normal Safari, Android and desktop browsers. */
+@supports (-webkit-touch-callout: none) {
+  @media (display-mode: standalone) {
+    header[data-bixbo-app-header][data-bixbo-home-header="true"] {
+      position: relative !important;
+      top: auto !important;
+      -webkit-backdrop-filter: none !important;
+      backdrop-filter: none !important;
+      filter: none !important;
+      transform: none !important;
+      perspective: none !important;
+      will-change: auto !important;
+      contain: none !important;
+      isolation: auto !important;
+      opacity: 1 !important;
+      background-color: var(--background) !important;
+      background-image: none !important;
+    }
+
+    header[data-bixbo-app-header][data-bixbo-home-header="true"] h1[data-bixbo-app-title] {
+      overflow: visible !important;
+      text-overflow: clip !important;
+      white-space: normal !important;
+      filter: none !important;
+      transform: none !important;
+      perspective: none !important;
+      will-change: auto !important;
+      contain: none !important;
+      opacity: 1 !important;
+      -webkit-font-smoothing: antialiased !important;
+    }
+
+    header[data-bixbo-app-header][data-bixbo-home-header="true"] h1[data-bixbo-app-title] *,
+    header[data-bixbo-app-header][data-bixbo-home-header="true"] img {
+      filter: none !important;
+      transform: none !important;
+      perspective: none !important;
+      will-change: auto !important;
+      backface-visibility: visible !important;
+    }
+
+    header[data-bixbo-app-header][data-bixbo-home-header="true"] [data-bixbo-display-title],
+    header[data-bixbo-app-header][data-bixbo-home-header="true"] [data-bixbo-display-title] + a {
+      text-shadow: none !important;
+      -webkit-text-stroke: 0 !important;
+      -webkit-font-smoothing: antialiased !important;
+      text-rendering: optimizeLegibility;
+      opacity: 1 !important;
+    }
+  }
+}
