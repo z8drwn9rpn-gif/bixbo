@@ -57,7 +57,7 @@ describe("Cramp pain explanations", () => {
 
   it("keeps the functional info control and places it beside the Cramp pain heading", () => {
     expect(primitives).toContain('aria-label={t("Cramp pain scale")}');
-    expect(painLayoutCss).toContain('section:has(> p + div button[aria-label="Cramp pain scale"])');
+    expect(painLayoutCss).toContain('button:is([aria-label="Cramp pain scale"], [aria-label="Stupnica bolesti pri kŕčoch"])');
     expect(painLayoutCss).toContain('grid-row: 1;');
     expect(painLayoutCss).toContain('grid-column: 2;');
     expect(slovak).toContain('"Cramp pain scale": "Stupnica bolesti pri kŕčoch"');
