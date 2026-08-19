@@ -23,6 +23,10 @@ jobs:
           ref: main
           fetch-depth: 0
 
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
       - name: Apply targeted repair
         id: apply
         run: python3 .github/scripts/fix_vitals_suksuk.py
