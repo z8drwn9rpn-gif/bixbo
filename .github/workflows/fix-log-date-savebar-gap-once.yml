@@ -40,7 +40,8 @@ jobs:
           grep -Fq 'var(--bixbo-log-date-offset, 0px)' src/features/logging/LogFormPrimitives.tsx
           grep -Fq 'formSurface.style.setProperty("--bixbo-log-date-offset", "36px")' src/components/LogSheet.tsx
           ! grep -Fq 'formSurface.style.paddingTop = showDateControl ? "36px" : ""' src/components/LogSheet.tsx
-          grep -Fq 'style={{ top: "var(--bixbo-log-date-offset, 0px)" }} className="sticky' src/features/logging/PainWizard.tsx
+          grep -Fq 'style={{ top: "var(--bixbo-log-date-offset, 0px)" }} className="sticky z-30 -mx-5 h-[60px]' src/features/logging/PainWizard.tsx
+          grep -Fq '<SheetFooter style={{ top: "var(--bixbo-log-date-offset, 0px)" }} className="sticky order-first' src/features/logging/PainWizard.tsx
           bun install --frozen-lockfile
           bun run typecheck
           bun run test
@@ -63,7 +64,7 @@ jobs:
         run: |
           set -euo pipefail
           git rm .github/workflows/fix-log-date-savebar-gap-once.yml .github/scripts/fix_log_date_savebar_gap.py
-          git add src/components/LogSheet.tsx src/features/logging/LogFormPrimitives.tsx src/features/logging/PainWizard.tsx src/lib/__tests__/ui-layout-architecture-regression.test.ts
+          git add src/components/LogSheet.tsx src/features/logging/LogFormPrimitives.tsx src/features/logging/PainWizard.tsx src/lib/__tests__/ui-layout-architecture-regression.test.ts src/lib/__tests__/pain-ios-layout-regression.test.ts src/lib/__tests__/forensic-performance-fixes-regression.test.ts
           git config user.name "BIXBO automation"
           git config user.email "actions@users.noreply.github.com"
           git commit -m "Remove gap between log date and action bar"
