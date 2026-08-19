@@ -35,3 +35,4 @@ jobs:
           git add src/features/notes/RecipesView.tsx src/routes/notes.tsx
           git commit -m "Match Recipes to stacked paper-card design"
           git push origin HEAD:main
+# Retry after Eyes storage compatibility fix.
