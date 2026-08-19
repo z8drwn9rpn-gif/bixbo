@@ -391,7 +391,7 @@ export function SexForm({ date, data, update, onDone, initialEntry }: { date: st
 
   const chipClass = (active: boolean) => `bixbo-sex-chip inline-flex min-h-[31px] items-center justify-center gap-[5px] rounded-full px-3 max-[430px]:px-2.5 py-[5px] text-xs font-semibold leading-none transition ${
     active
-      ? "bg-primary/15 text-foreground ring-2 ring-foreground/75 ring-offset-1 ring-offset-background"
+      ? "bg-primary text-primary-foreground shadow-sm ring-2 ring-foreground/60"
       : "bg-tint text-foreground ring-1 ring-border"
   }`;
   const symptomChipClass = (active: boolean) => `bixbo-sex-symptom-chip inline-flex min-h-[30px] items-center justify-center gap-[5px] rounded-full px-2.5 py-[5px] text-[11.5px] font-semibold leading-none transition ${

@@ -115,8 +115,8 @@ function BodyRecoveryForm({
   const cur = data.dayLogs[date] ?? {};
   const [mode, setMode] = useState<"body" | "recovery">("body");
   const [time, setTime] = useState(nowHHMM());
-  const [temperature, setTemperature] = useState(cur.temperature != null ? String(cur.temperature).replace(".", ",") : "");
-  const [weight, setWeight] = useState(cur.weight != null ? String(cur.weight).replace(".", ",") : "");
+  const [temperature, setTemperature] = useState("");
+  const [weight, setWeight] = useState("");
   const [sleepHours, setSleepHours] = useState(cur.sleepHours != null ? String(cur.sleepHours).replace(".", ",") : "");
   const [sleepQuality, setSleepQuality] = useState<string[]>(asArr(cur.sleepQuality));
   const [therapyKind, setTherapyKind] = useState<ThermoKind>("heat");
@@ -129,6 +129,45 @@ function BodyRecoveryForm({
     const parsed = Number(value.replace(",", "."));
     return value.trim() && Number.isFinite(parsed) ? parsed : undefined;
   };
+
+  const temperatureEntries = cur.temperatureEntries?.length
+    ? cur.temperatureEntries
+    : cur.temperature != null
+      ? [{ id: `legacy-temperature-${date}`, time: "", value: cur.temperature }]
+      : [];
+  const weightEntries = cur.weightEntries?.length
+    ? cur.weightEntries
+    : cur.weight != null
+      ? [{ id: `legacy-weight-${date}`, time: "", value: cur.weight }]
+      : [];
+
+  const deleteTemperature = (id: string) => updateDayLog(update, date, (log) => {
+    const entries = log.temperatureEntries?.length
+      ? log.temperatureEntries
+      : log.temperature != null
+        ? [{ id: `legacy-temperature-${date}`, time: "", value: log.temperature }]
+        : [];
+    const next = entries.filter((entry) => entry.id !== id);
+    return {
+      ...log,
+      temperatureEntries: next.length ? next : undefined,
+      temperature: next.at(-1)?.value,
+    };
+  });
+
+  const deleteWeight = (id: string) => updateDayLog(update, date, (log) => {
+    const entries = log.weightEntries?.length
+      ? log.weightEntries
+      : log.weight != null
+        ? [{ id: `legacy-weight-${date}`, time: "", value: log.weight }]
+        : [];
+    const next = entries.filter((entry) => entry.id !== id);
+    return {
+      ...log,
+      weightEntries: next.length ? next : undefined,
+      weight: next.at(-1)?.value,
+    };
+  });
 
   const sleepOptions = [
     ["Awful", "🙁"], ["Terrible", "🙁"], ["Restless", "🌀"], ["Poor", "🙁"],
@@ -224,6 +263,21 @@ function BodyRecoveryForm({
               <Input inputMode="decimal" value={temperature} onChange={(e) => setTemperature(e.target.value.replace(/[^0-9.,]/g, ""))} placeholder="36,6 °C" className="h-10 rounded-2xl pr-12" />
               <span className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">°C</span>
             </div>
+            {temperatureEntries.length > 0 ? (
+              <div className="mt-2 space-y-1.5">
+                <p className="text-[10px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">{t("Saved temperature measurements")}</p>
+                {temperatureEntries.map((entry) => (
+                  <div key={entry.id} className="flex items-center gap-2 rounded-2xl bg-surface px-3 py-2 ring-1 ring-border/70">
+                    <Ico e="🌡️" size={16} />
+                    <span className="min-w-0 flex-1 text-xs font-semibold">{String(entry.value).replace(".", ",")} °C</span>
+                    {entry.time ? <span className="text-[10px] text-muted-foreground">{entry.time}</span> : null}
+                    <button type="button" onClick={() => deleteTemperature(entry.id)} aria-label={t("Delete")} className="grid h-7 w-7 place-items-center rounded-full text-muted-foreground transition hover:bg-tint hover:text-foreground">
+                      <X className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            ) : null}
           </div>
           <div>
             <p className="mb-1.5 text-xs text-muted-foreground">{t("New weight measurement")}</p>
@@ -231,6 +285,21 @@ function BodyRecoveryForm({
               <Input inputMode="decimal" value={weight} onChange={(e) => setWeight(e.target.value.replace(/[^0-9.,]/g, ""))} placeholder="62,5 kg" className="h-10 rounded-2xl pr-12" />
               <span className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">kg</span>
             </div>
+            {weightEntries.length > 0 ? (
+              <div className="mt-2 space-y-1.5">
+                <p className="text-[10px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">{t("Saved weight measurements")}</p>
+                {weightEntries.map((entry) => (
+                  <div key={entry.id} className="flex items-center gap-2 rounded-2xl bg-surface px-3 py-2 ring-1 ring-border/70">
+                    <Ico e="⚖️" size={16} />
+                    <span className="min-w-0 flex-1 text-xs font-semibold">{String(entry.value).replace(".", ",")} kg</span>
+                    {entry.time ? <span className="text-[10px] text-muted-foreground">{entry.time}</span> : null}
+                    <button type="button" onClick={() => deleteWeight(entry.id)} aria-label={t("Delete")} className="grid h-7 w-7 place-items-center rounded-full text-muted-foreground transition hover:bg-tint hover:text-foreground">
+                      <X className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            ) : null}
           </div>
           <div>
             <p className="mb-1.5 text-xs text-muted-foreground">{t("Sleep (hours)")}</p>
