@@ -42,19 +42,30 @@ describe("cross-device rendering fixes", () => {
     expect(css).toContain("-webkit-text-stroke: 0 !important");
     expect(css).toContain("filter: none !important");
     expect(appShellComponent).toContain("data-bixbo-app-header");
+    expect(appShellComponent).toContain("data-bixbo-app-frame");
     expect(appShellComponent).toContain('big ? "bg-background" : "bg-background/88 backdrop-blur-xl supports-[backdrop-filter]:bg-background/82"');
+    expect(appShellComponent).toContain('big ? "overflow-visible" : "truncate"');
     expect(appShellComponent).toContain('textShadow: big ? "none" : BIXBO_ROUNDED_DISPLAY_SHADOW');
   });
 
-  it("keeps the Home header out of the standalone iOS PWA compositor path", () => {
+  it("keeps the standalone Home wordmark off fractional WebKit raster layers", () => {
     expect(root).toContain('root.dataset.bixboPwaMode = standalone ? "standalone" : "browser"');
     expect(appShellComponent).toContain('const isHomeHeader = pathname === "/" && title !== undefined');
     expect(appShellComponent).toContain('data-bixbo-home-header={isHomeHeader ? "true" : undefined}');
+    expect(root).toContain('html[data-bixbo-pwa-mode="standalone"] [data-bixbo-app-frame]');
     expect(root).toContain('html[data-bixbo-pwa-mode="standalone"] header[data-bixbo-app-header][data-bixbo-home-header="true"]');
     expect(root).not.toContain(':has(h1[data-bixbo-app-title] [data-bixbo-display-title])');
-    expect(root).toContain("position: relative !important");
+    expect(root).toContain("overflow-x: clip !important");
+    expect(root).toContain("position: static !important");
+    expect(root).toContain("z-index: auto !important");
+    expect(root).toContain("white-space: normal !important");
+    expect(root).toContain("line-height: 36px !important");
+    expect(root).toContain("line-height: 40px !important");
+    expect(root).toContain("letter-spacing: -1px !important");
+    expect(root).toContain("font-kerning: none !important");
+    expect(root).toContain("font-synthesis: none !important");
     expect(root).toContain("-webkit-backdrop-filter: none !important");
     expect(root).toContain("will-change: auto !important");
-    expect(root).toContain("-webkit-font-smoothing: auto !important");
+    expect(root).toContain("-webkit-font-smoothing: antialiased !important");
   });
 });
