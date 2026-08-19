@@ -45,12 +45,11 @@ jobs:
         run: bun run bundle:check
       - name: SSR smoke
         run: timeout 75s bun run smoke:ssr
-      - name: Commit validated patch
+      - name: Commit validated source patch
         run: |
           set -euo pipefail
           git config user.name "BIXBO automation"
           git config user.email "actions@users.noreply.github.com"
-          git rm .github/workflows/apply-recipes-eyes-pwa-fix.yml scripts/apply-recipes-eyes-pwa-fix.py
-          git add src/features/notes/RecipesView.tsx src/features/logging/EyesForm.tsx src/routes/__root.tsx public/bixbo-push-sw.js .github/workflows/deploy-cloudflare.yml src/lib/__tests__/pwa-lifecycle-reload-regression.test.ts src/lib/__tests__/eyes-recipes-reference-regression.test.ts
+          git add src/features/notes/RecipesView.tsx src/features/logging/EyesForm.tsx src/routes/__root.tsx public/bixbo-push-sw.js src/lib/__tests__/pwa-lifecycle-reload-regression.test.ts src/lib/__tests__/eyes-recipes-reference-regression.test.ts
           git commit -m "Fix Recipes reference UI and PWA freshness"
           git push origin HEAD:fix/recipes-eyes-pwa-freshness
