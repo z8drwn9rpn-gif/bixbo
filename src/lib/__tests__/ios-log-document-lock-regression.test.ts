@@ -33,7 +33,9 @@ describe("iOS full-screen log document lock", () => {
     expect(sheet).toContain('.replace("!top-[var(--bixbo-viewport-offset,0px)]", "!top-0")');
     expect(sheet).toContain('.replace("!h-[var(--bixbo-viewport-height,100svh)]", "!h-auto")');
     expect(sheet).toContain('.replace("!max-h-[var(--bixbo-viewport-height,100svh)]", "!max-h-none")');
-    expect(sheet).toContain("!backdrop-blur-none");
+    expect(sheet).toContain('backdropFilter: "none"');
+    expect(sheet).toContain('WebkitBackdropFilter: "none"');
+    expect(sheet).not.toContain("!backdrop-blur-none");
   });
 
   it("keeps the lock ref-counted and restores original overflow styles", () => {
