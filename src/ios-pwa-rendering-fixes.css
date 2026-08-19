@@ -7,9 +7,9 @@
        wordmark and greeting into the soft sticky-header compositor layer.
 
        Dynamic Island live activities (notably an active phone call) can paint a
-       system-owned soft material/shadow below the island. App CSS cannot turn
-       that system layer off, so keep a small extra clearance on installed
-       iPhones without creating a large dead zone above the Home artwork. */
+       system-owned soft material/shadow below the island. App CSS cannot remove
+       that system layer, so keep a compact clearance while making the complete
+       Home paint island an isolated, opaque, filter-free compositing boundary. */
     [data-bixbo-home-paint-island] {
       position: relative !important;
       top: auto !important;
@@ -22,11 +22,23 @@
       perspective: none !important;
       will-change: auto !important;
       contain: none !important;
-      isolation: auto !important;
+      isolation: isolate !important;
+      mix-blend-mode: normal !important;
       opacity: 1 !important;
       box-shadow: none !important;
       background-color: var(--background) !important;
       background-image: none !important;
+    }
+
+    /* Defend the complete Home subtree at source instead of relying only on the
+       global no-backdrop stylesheet. Installed iOS PWAs can preserve a promoted
+       layer between launches; every descendant therefore opts out explicitly. */
+    [data-bixbo-home-paint-island] *,
+    [data-bixbo-home-paint-island] *::before,
+    [data-bixbo-home-paint-island] *::after {
+      -webkit-backdrop-filter: none !important;
+      backdrop-filter: none !important;
+      mix-blend-mode: normal !important;
     }
 
     [data-bixbo-home-paint-island] [data-bixbo-app-title] {

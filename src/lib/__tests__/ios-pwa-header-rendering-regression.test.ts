@@ -24,6 +24,8 @@ describe("iPhone standalone PWA Home rendering", () => {
     expect(css).toContain("transform: none !important");
     expect(css).toContain("will-change: auto !important");
     expect(css).toContain("contain: none !important");
+    expect(css).toContain("isolation: isolate !important");
+    expect(css).toContain("mix-blend-mode: normal !important");
     expect(css).toContain("overflow: visible !important");
     expect(css).toContain("text-shadow: none !important");
     expect(css).toContain("box-shadow: none !important");
@@ -55,5 +57,11 @@ describe("iPhone standalone PWA Home rendering", () => {
     expect(root).toContain('[data-bixbo-home-paint-island]');
     expect(css).toContain("padding-top: calc(max(0.5rem, env(safe-area-inset-top)) + 1.25rem) !important");
     expect(css).not.toContain("+ 2.75rem");
+  });
+
+  it("opts the complete Home subtree out of backdrop filtering", () => {
+    expect(css).toContain("[data-bixbo-home-paint-island] *::before");
+    expect(css).toContain("[data-bixbo-home-paint-island] *::after");
+    expect(css).toContain("isolation: isolate !important");
   });
 });

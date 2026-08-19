@@ -4,20 +4,34 @@
    --bixbo-log-date-offset, so normal document flow must reserve the same offset.
    Without this reservation, the first question starts underneath the sticky bar. */
 
-/* SheetHeader ships with mb-2 (8px). In a full-screen detail log that margin
-   sits exactly between the fixed date row and Back/Save or Back/Next, creating
-   the visible gap the date-control layout is supposed to avoid. Remove only
-   that inherited header margin; do not pull the log surface upward. The action
-   bars below still reserve their own flow space so fields cannot be covered. */
+/* SheetContent owns a base gap-4 (16px). Full-screen logs are flex columns, so
+   that inherited gap lands between the 56px title row and the scrolling log
+   surface. The fixed Date row is anchored to the title row while Back/Save or
+   Back/Next is anchored to the log surface, which makes that parent gap visible
+   between Date and the action bar. Remove the parent gap only for full-screen
+   logs. The rules below still reserve safe space after the sticky action bar so
+   no log field can ever be covered. */
+[data-bixbo-fullscreen-log="true"] {
+  gap: 0 !important;
+}
+
+/* Defensive: old SheetHeader variants used a bottom margin. Keep full-screen
+   log headers flush even if that margin is reintroduced elsewhere. */
 [data-bixbo-fullscreen-log="true"] .flex.h-full.min-h-0.flex-col > .h-14.shrink-0.flex-row {
   margin-bottom: 0 !important;
 }
 
 /* Standard logs already provide their own normal inter-section gap, therefore
-   reserve exactly the date offset below the sticky action bar. */
+   reserve exactly the date offset below the sticky action bar. Keep the bar a
+   fully opaque, non-filtered paint surface so WebKit cannot soften the content
+   underneath it. */
 [data-bixbo-log-surface="standard"] [data-bixbo-log-save-bar] {
   margin-bottom: var(--bixbo-log-date-offset, 0px) !important;
   background-color: var(--background) !important;
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+  -webkit-filter: none !important;
+  filter: none !important;
 }
 
 /* Pain owns a custom sticky Back/Next bar instead of SaveBar. Reserve the date
@@ -28,6 +42,22 @@
 [data-bixbo-log-surface="pain"] > div.flex.min-h-full.flex-col.px-5.pb-4.pt-0 > div.sticky {
   margin-bottom: calc(var(--bixbo-log-date-offset, 0px) + 12px) !important;
   background-color: var(--background) !important;
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+  -webkit-filter: none !important;
+  filter: none !important;
+}
+
+/* The fixed Date row itself must stay an opaque, flat layer. This is repeated
+   here intentionally in addition to the global no-blur guard: iOS can retain a
+   previously promoted sticky layer across an in-app route transition. */
+[data-bixbo-log-date-control] {
+  background-color: var(--background) !important;
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+  -webkit-filter: none !important;
+  filter: none !important;
+  will-change: auto !important;
 }
 
 /* Scale explanation sheets must paint above the fixed date pill (z 260).
