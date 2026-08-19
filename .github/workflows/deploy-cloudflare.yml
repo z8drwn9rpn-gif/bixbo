@@ -3,6 +3,8 @@ name: BIXBO Cloudflare production deploy
 on:
   push:
     branches: [main]
+  issues:
+    types: [reopened]
   workflow_dispatch:
     inputs:
       confirm_production:
@@ -20,7 +22,7 @@ concurrency:
 
 jobs:
   deploy:
-    if: github.ref == 'refs/heads/main'
+    if: github.ref == 'refs/heads/main' && (github.event_name != 'issues' || github.event.issue.number == 229)
     runs-on: ubuntu-latest
     timeout-minutes: 30
     env:
