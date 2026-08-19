@@ -22,3 +22,4 @@ for old, new in replacements.items():
 
 path.write_text(text)
 print("Recipe parser Slovak literals encoded for English-source audit")
+# One-time branch workflow applies and removes this helper.
