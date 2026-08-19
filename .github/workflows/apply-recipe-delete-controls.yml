@@ -1,0 +1,104 @@
+name: Apply recipe delete controls
+
+on:
+  push:
+    branches: [fix/recipe-meta-labels-single-line]
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7.0.1
+        with:
+          ref: fix/recipe-meta-labels-single-line
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+      - name: Patch recipe delete controls
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          path = Path('src/features/notes/RecipesView.tsx')
+          text = path.read_text()
+
+          favorite_anchor = '''  const toggleFavorite = (note: Note) => {
+    update((currentData) => ({
+      ...currentData,
+      notebook: currentData.notebook.map((saved) => saved.id === note.id && saved.recipe
+        ? { ...saved, recipe: { ...saved.recipe, favorite: !saved.recipe.favorite }, updatedAt: Date.now() }
+        : saved),
+    }));
+  };
+'''
+          delete_block = favorite_anchor + '''
+  const deleteRecipe = (note: Note) => {
+    if (!window.confirm(t("Delete this recipe? This cannot be undone."))) return;
+    update((currentData) => ({
+      ...currentData,
+      notebook: currentData.notebook.filter((saved) => saved.id !== note.id),
+    }));
+  };
+
+  const deleteAllRecipes = () => {
+    if (!recipes.length || !window.confirm(t("Delete all recipes? This cannot be undone."))) return;
+    update((currentData) => ({
+      ...currentData,
+      notebook: currentData.notebook.filter((saved) => saved.kind !== "recipe"),
+    }));
+    setQuery("");
+    setFilter("all");
+    setIndex(0);
+  };
+'''
+          if favorite_anchor not in text:
+              raise SystemExit('Favorite anchor not found')
+          text = text.replace(favorite_anchor, delete_block, 1)
+
+          actions_old = '''            <div className="mt-3 flex items-center justify-between gap-2">
+              <button type="button" onClick={() => setEditor(editorFromNote(current))} className="rounded-full border border-[#C9C0AA] bg-white/30 px-3 py-1.5 text-[10px] font-semibold text-[#555A3E]">{t("Edit recipe")}</button>
+              <button type="button" onClick={() => toggleFavorite(current)} className={`rounded-full px-3 py-1.5 text-[10px] font-semibold ring-1 ring-[#C9C0AA] ${current.recipe.favorite ? "bg-[#7C8A43] text-white" : "bg-white/25 text-[#555A3E]"}`}>{t("Favorite")}</button>
+            </div>'''
+          actions_new = '''            <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
+              <button type="button" onClick={() => setEditor(editorFromNote(current))} className="rounded-full border border-[#C9C0AA] bg-white/30 px-3 py-1.5 text-[10px] font-semibold text-[#555A3E]">{t("Edit recipe")}</button>
+              <button type="button" onClick={() => toggleFavorite(current)} className={`rounded-full px-3 py-1.5 text-[10px] font-semibold ring-1 ring-[#C9C0AA] ${current.recipe.favorite ? "bg-[#7C8A43] text-white" : "bg-white/25 text-[#555A3E]"}`}>{t("Favorite")}</button>
+              <button type="button" onClick={() => deleteRecipe(current)} className="rounded-full border border-destructive/35 bg-destructive/5 px-3 py-1.5 text-[10px] font-semibold text-destructive">{t("Delete recipe")}</button>
+            </div>'''
+          if actions_old not in text:
+              raise SystemExit('Recipe actions anchor not found')
+          text = text.replace(actions_old, actions_new, 1)
+
+          footer_old = '''          <Button className="h-14 w-full max-w-[320px] rounded-full text-base font-semibold shadow-sm" onClick={() => setEditor(blankEditor())}><Plus className="h-5 w-5" />{t("New recipe")}</Button>
+          <button type="button" onClick={() => { setImportOpen(true); setPreview([]); }} className="min-h-10 rounded-full px-4 text-xs font-semibold text-muted-foreground hover:bg-tint">{t("Import from Notes")}</button>'''
+          footer_new = '''          <Button className="h-14 w-full max-w-[320px] rounded-full text-base font-semibold shadow-sm" onClick={() => setEditor(blankEditor())}><Plus className="h-5 w-5" />{t("New recipe")}</Button>
+          <button type="button" onClick={() => { setImportOpen(true); setPreview([]); }} className="min-h-10 rounded-full px-4 text-xs font-semibold text-muted-foreground hover:bg-tint">{t("Import from Notes")}</button>
+          {recipes.length > 0 ? <button type="button" onClick={deleteAllRecipes} className="min-h-10 rounded-full px-4 text-xs font-semibold text-destructive hover:bg-destructive/5">{t("Delete all recipes")}</button> : null}'''
+          if footer_old not in text:
+              raise SystemExit('Recipe footer anchor not found')
+          text = text.replace(footer_old, footer_new, 1)
+
+          path.write_text(text)
+          PY
+      - name: Install
+        run: bun install --frozen-lockfile
+      - name: Typecheck
+        run: bun run typecheck
+      - name: Lint
+        run: bun run lint
+      - name: Unit tests
+        run: bun run test
+      - name: Build
+        run: bun run build
+      - name: Commit validated source change
+        run: |
+          set -euo pipefail
+          git config user.name "BIXBO automation"
+          git config user.email "actions@users.noreply.github.com"
+          git rm .github/workflows/apply-recipe-delete-controls.yml
+          git add src/features/notes/RecipesView.tsx
+          git commit -m "Add recipe delete controls"
+          git push origin HEAD:fix/recipe-meta-labels-single-line
