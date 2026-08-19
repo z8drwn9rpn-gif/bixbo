@@ -106,6 +106,7 @@ describe("10/10 release gates", () => {
     expect(deploy).toContain("content-security-policy");
     expect(deploy).toContain("Live PWA verify");
     expect(deploy).toContain("**Commit:** \\`${DEPLOY_SHA}\\`");
+    expect(deploy).toContain('grep -Fq "$DEPLOY_SHA" <<<"$sw"');
     expect(packageJson).toContain("scripts/stamp-service-worker.mjs");
     expect(stampScript).toContain("process.env.DEPLOY_SHA || process.env.GITHUB_SHA");
     expect(stampScript).toContain(".output/public/bixbo-push-sw.js");
