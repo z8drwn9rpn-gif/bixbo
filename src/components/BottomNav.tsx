@@ -106,7 +106,7 @@ export function BottomNav() {
     <nav
       data-bixbo-bottom-nav
       aria-label="Primary navigation"
-      className="pointer-events-none fixed inset-x-0 bottom-0 z-40 px-3 sm:px-4 lg:hidden"
+      className="pointer-events-none fixed inset-x-0 bottom-2 z-40 px-3 sm:px-4 lg:hidden"
       style={{
         contain: "layout paint",
         paddingBottom: "max(0px, calc(env(safe-area-inset-bottom) - 30px))",
