@@ -61,4 +61,11 @@ jobs:
           git config user.name "BIXBO automation"
           git config user.email "actions@users.noreply.github.com"
           git commit -m "Add multi-entry sleep logging"
-          git push origin HEAD:main
+          for attempt in 1 2 3; do
+            git fetch origin main
+            git rebase origin/main
+            if git push origin HEAD:main; then
+              exit 0
+            fi
+          done
+          exit 1
