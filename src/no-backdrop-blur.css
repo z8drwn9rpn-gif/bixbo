@@ -1,0 +1,18 @@
+/* BIXBO uses solid/dimmed surfaces instead of backdrop-filter blur.
+   WebKit/iPhone PWA can rasterize large filtered layers and make text/content
+   behind them look soft. Keep all existing backgrounds, opacity and shadows,
+   but remove backdrop filtering everywhere in the app. */
+body[data-bixbo-app-root] *,
+body[data-bixbo-app-root] *::before,
+body[data-bixbo-app-root] *::after {
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+}
+
+/* Full-screen log titles should remain optically crisp even if a browser
+   inherits display-title effects from surrounding surfaces. */
+[data-bixbo-fullscreen-log="true"] h2 {
+  -webkit-text-stroke: 0 !important;
+  text-shadow: none !important;
+  filter: none !important;
+}
