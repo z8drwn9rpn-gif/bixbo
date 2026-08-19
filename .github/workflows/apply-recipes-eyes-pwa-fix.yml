@@ -3,6 +3,8 @@ name: Apply Recipes Eyes PWA fix
 on:
   push:
     branches: [fix/recipes-eyes-pwa-freshness]
+  pull_request:
+    branches: [main]
 
 permissions:
   contents: write
