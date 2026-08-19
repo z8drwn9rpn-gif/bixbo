@@ -40,4 +40,8 @@ function n(v:string){return v.normalize("NFD").replace(/[\u0300-\u036f]/g,"").to
 export function semanticIconForLabel(label?:string):C|undefined{if(!label)return;const x=n(label);return R.find(r=>r.terms.some(t=>x.includes(n(t))))?.icon}
 export function SemanticIco({label,fallbackEmoji,size=18,className}:{label?:string;fallbackEmoji?:string;size?:number;className?:string}){const Cmp=semanticIconForLabel(label);if(Cmp)return <Cmp size={size} className={className}/>;return fallbackEmoji?<BaseIco e={fallbackEmoji} size={size} className={className}/>:null}
 const E=/\p{Extended_Pictographic}/u;
-export function SemanticIcoText({text,size=16,className}:{text:string;size?:number;className?:string}){const Cmp=E.test(text)?undefined:semanticIconForLabel(text);if(!Cmp)return <BaseIcoText text={text} size={size} className={className}/>;return <span className={["inline",className].filter(Boolean).join(" ")}><Cmp size={size} className="mr-1.5 inline-block align-[-0.15em]"/><span>{text}</span></span>}
+export function SemanticIcoText({text,size=16,className}:{text:string;size?:number;className?:string}){
+ const Cmp=E.test(text)?undefined:semanticIconForLabel(text);
+ if(!Cmp)return <BaseIcoText text={text} size={size} className={["contents",className].filter(Boolean).join(" ")}/>;
+ return <><Cmp size={size} className="mr-1.5 inline-block align-[-0.15em]"/><span className={["whitespace-normal",className].filter(Boolean).join(" ")}>{text}</span></>;
+}
