@@ -19,7 +19,9 @@ jobs:
           fetch-depth: 0
 
       - name: Wire features into existing app
-        run: python scripts/finish-eyes-recipes.py
+        run: |
+          python scripts/shrink-eyes-painwizard.py
+          python scripts/finish-eyes-recipes.py
 
       - uses: oven-sh/setup-bun@v2
         with:
@@ -38,7 +40,7 @@ jobs:
           git config user.name 'BIXBO automation'
           git config user.email 'actions@users.noreply.github.com'
           git add src
-          git rm .github/workflows/finish-eyes-recipes.yml scripts/finish-eyes-recipes.py scripts/apply-eyes-recipes-idempotent.py || true
+          git rm .github/workflows/finish-eyes-recipes.yml scripts/finish-eyes-recipes.py scripts/shrink-eyes-painwizard.py scripts/apply-eyes-recipes-idempotent.py || true
           if git diff --cached --quiet; then
             echo 'No changes to commit.'
             exit 0
