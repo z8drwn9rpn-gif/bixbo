@@ -5,6 +5,7 @@ const css = readFileSync("src/ios-pwa-rendering-fixes.css", "utf8");
 const appShellCss = readFileSync("src/app-shell.css", "utf8");
 const appShell = readFileSync("src/components/AppShell.tsx", "utf8");
 const home = readFileSync("src/features/home/HomePage.tsx", "utf8");
+const root = readFileSync("src/routes/__root.tsx", "utf8");
 
 describe("iPhone standalone PWA Home rendering", () => {
   it("loads a WebKit standalone-only Home paint-island correction", () => {
@@ -46,5 +47,11 @@ describe("iPhone standalone PWA Home rendering", () => {
     expect(css).toContain("[data-bixbo-home-wordmark]");
     expect(css).not.toContain("mask-image:");
     expect(css).not.toContain("-webkit-mask-image:");
+  });
+
+  it("keeps Home content below the iOS status bar instead of under translucent system chrome", () => {
+    expect(root).toContain('{ name: "apple-mobile-web-app-status-bar-style", content: "default" }');
+    expect(root).not.toContain('content: "black-translucent"');
+    expect(root).toContain('[data-bixbo-home-paint-island]');
   });
 });
