@@ -45,8 +45,10 @@ describe("cross-device rendering fixes", () => {
     expect(appShellComponent).toContain("data-bixbo-app-header");
     expect(appShellComponent).toContain("border-b border-border/65 bg-background");
     expect(appShellComponent).not.toContain("backdrop-blur-xl");
-    expect(home).toContain('textShadow: "none", filter: "none" }}>BIXBO</span>');
-    expect(home).not.toContain('textShadow: roundedDisplayShadow }}>BIXBO</span>');
+    expect(home).toContain("function BixboHomeWordmark()");
+    expect(home).toContain("data-bixbo-home-wordmark");
+    expect(home).toContain('<BixboHomeWordmark />');
+    expect(home).not.toContain('>BIXBO</span>');
   });
 
   it("keeps the Home header out of the standalone iOS PWA compositor path", () => {
