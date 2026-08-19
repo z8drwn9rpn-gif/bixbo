@@ -458,6 +458,8 @@ function NotesPage() {
       <FolderBixboIcon folder={activeFolder} size={24} />
       <span className="truncate">{activeFolder.name}</span>
     </button>
+  ) : screen === "recipes" ? (
+    "Recipes"
   ) : (
     "Bixbo Note"
   );
@@ -500,25 +502,34 @@ function NotesPage() {
         )}
 
         {!openFolder && (
-          <div className="grid grid-cols-4 gap-1 rounded-2xl bg-tint p-1 ring-1 ring-border/60">
-            {[
-              { key: "all" as const, label: "Notes" },
-              { key: "recipes" as const, label: "Recipes" },
-              { key: "folders" as const, label: "Folders" },
-              { key: "archived" as const, label: "Archive" },
-            ].map((item) => (
-              <button
-                key={item.key}
-                type="button"
-                onClick={() => setScreen(item.key)}
-                className={`min-h-11 rounded-xl px-2 py-2 text-xs font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
-                  screen === item.key ? "bg-primary text-primary-foreground shadow-sm" : "text-foreground/75"
-                }`}
-              >
-                {t(item.label)}
-              </button>
-            ))}
-          </div>
+          <>
+            <div className="mx-auto grid w-full max-w-[560px] grid-cols-2 gap-1 rounded-full bg-tint p-1 ring-1 ring-border/60">
+              {[
+                { key: "all" as const, label: "Notes" },
+                { key: "recipes" as const, label: "Recipes" },
+              ].map((item) => {
+                const active = item.key === "recipes" ? screen === "recipes" : screen !== "recipes";
+                return (
+                  <button
+                    key={item.key}
+                    type="button"
+                    onClick={() => setScreen(item.key)}
+                    className={`min-h-11 rounded-full px-3 py-2 text-sm font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
+                      active ? "bg-surface text-foreground shadow-sm ring-1 ring-border/50" : "text-foreground/70"
+                    }`}
+                  >
+                    {t(item.label)}
+                  </button>
+                );
+              })}
+            </div>
+            {screen !== "recipes" ? (
+              <div className="flex justify-end gap-2">
+                <button type="button" onClick={() => setScreen("folders")} className={`rounded-full px-3 py-1.5 text-xs font-semibold ${screen === "folders" ? "bg-primary text-primary-foreground" : "bg-tint text-muted-foreground"}`}>{t("Folders")}</button>
+                <button type="button" onClick={() => setScreen("archived")} className={`rounded-full px-3 py-1.5 text-xs font-semibold ${screen === "archived" ? "bg-primary text-primary-foreground" : "bg-tint text-muted-foreground"}`}>{t("Archive")}</button>
+              </div>
+            ) : null}
+          </>
         )}
 
         {screen === "recipes" && !openFolder ? (
