@@ -21,6 +21,7 @@ import { useI18n } from "@/hooks/useI18n";
 import { clearStaleAssetRecoveryGuard, recoverFromStaleAssetError } from "@/lib/staleAssetRecovery";
 import { recordRuntimeDiagnosticIssue } from "@/lib/appDiagnostics";
 import { installRuntimeDiagnostics } from "@/lib/runtimeDiagnosticsInstaller";
+import { ensureAppServiceWorker } from "@/lib/appServiceWorker";
 
 const LANGUAGE_BOOTSTRAP_SCRIPT = `(() => {
   try {
@@ -227,5 +228,17 @@ function RootComponent() {
   const router = useRouter();
   useThemeSync();
   useEffect(() => installRuntimeDiagnostics((issue) => { toast.error("BIXBO detected an app error", { description: `${issue.area}: ${issue.message}`, action: { label: "App scan", onClick: () => void router.navigate({ to: "/diagnostics" }) } }); }), [router]);
+  useEffect(() => {
+    void ensureAppServiceWorker();
+    try {
+      const url = new URL(window.location.href);
+      if (url.searchParams.has("__bixbo_sw_update")) {
+        url.searchParams.delete("__bixbo_sw_update");
+        window.history.replaceState(window.history.state, "", `${url.pathname}${url.search}${url.hash}`);
+      }
+    } catch {
+      // Update-marker cleanup must never affect startup.
+    }
+  }, []);
   return <QueryClientProvider client={queryClient}><ConsentAwareCloudRuntime /><AppPrivacyGuard><DiagnosticProfiler id="RouteTree"><Outlet /></DiagnosticProfiler></AppPrivacyGuard><NotificationPrompt /><Toaster /></QueryClientProvider>;
 }

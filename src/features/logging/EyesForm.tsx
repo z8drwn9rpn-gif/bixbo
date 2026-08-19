@@ -91,9 +91,11 @@ export function EyesForm({
     <div className="flex flex-col gap-3">
       {!embedded && <SaveBar onCancel={onDone} onSave={save} />}
       <div className="space-y-4">
-        <Field label="Time">
-          <Input type="time" value={time} onChange={(event) => setTime(event.target.value)} className="w-full" />
-        </Field>
+        {!embedded ? (
+          <Field label="Time">
+            <Input type="time" value={time} onChange={(event) => setTime(event.target.value)} className="w-full" />
+          </Field>
+        ) : null}
 
         <Field label="Affected eye">
           <div className="mt-2 flex flex-wrap gap-2">

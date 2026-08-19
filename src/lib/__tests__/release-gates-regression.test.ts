@@ -20,7 +20,7 @@ describe("10/10 release gates", () => {
     const offline = read("public/bixbo-offline-runtime.js");
 
     expect(worker).toContain('importScripts("/bixbo-offline-runtime.js")');
-    expect(worker).toContain('const BIXBO_PUSH_SW_VERSION = "2026.08.19.3"');
+    expect(worker).toContain('const BIXBO_PUSH_SW_VERSION = "__BIXBO_DEPLOY_SHA__"');
     expect(worker).toContain('self.addEventListener("notificationclick"');
     expect(offline).toContain('self.addEventListener("fetch"');
     expect(offline).toContain("networkFirstNavigation");
@@ -93,8 +93,10 @@ describe("10/10 release gates", () => {
     expect(deploy).toContain("Full quality gate");
   });
 
-  it("makes deployment success prove the live PWA contract and publish its exact SHA", () => {
+  it("makes deployment success prove the live PWA contract and build exact-SHA service-worker bytes", () => {
     const deploy = read(".github/workflows/deploy-cloudflare.yml");
+    const packageJson = read("package.json");
+    const stampScript = read("scripts/stamp-service-worker.mjs");
 
     expect(deploy).toContain("/manifest.json");
     expect(deploy).toContain("/bixbo-push-sw.js");
@@ -104,6 +106,11 @@ describe("10/10 release gates", () => {
     expect(deploy).toContain("content-security-policy");
     expect(deploy).toContain("Live PWA verify");
     expect(deploy).toContain("**Commit:** \\`${DEPLOY_SHA}\\`");
+    expect(deploy).toContain('grep -Fq "$DEPLOY_SHA" <<<"$sw"');
+    expect(packageJson).toContain("scripts/stamp-service-worker.mjs");
+    expect(stampScript).toContain("process.env.DEPLOY_SHA || process.env.GITHUB_SHA");
+    expect(stampScript).toContain(".output/public/bixbo-push-sw.js");
+    expect(stampScript).toContain("__BIXBO_DEPLOY_SHA__");
   });
 
   it("checks live PWA infrastructure again after production deploy", () => {

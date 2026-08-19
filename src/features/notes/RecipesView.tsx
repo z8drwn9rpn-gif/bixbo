@@ -432,6 +432,7 @@ function RecipeMetaIcon({ kind }: { kind: "time" | "people" | "tag" }) {
 export function RecipesView({ data, update }: { data: BixboData; update: UpdateFn }) {
   const { t } = useI18n();
   const [query, setQuery] = useState("");
+  const [searchOpen, setSearchOpen] = useState(false);
   const [filter, setFilter] = useState<Filter>("all");
   const [index, setIndex] = useState(0);
   const [editor, setEditor] = useState<EditorDraft | null>(null);
@@ -645,21 +646,45 @@ export function RecipesView({ data, update }: { data: BixboData; update: UpdateF
 
   return (
     <section className="space-y-4 pb-4">
-      <div className="relative">
-        <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-        <Input value={query} onChange={(event) => setQuery(event.target.value)} placeholder={t("Search recipes…")} className="h-12 rounded-2xl border-border/70 bg-surface pl-10 pr-11 shadow-sm ring-1 ring-border/70" />
-        {query ? <button type="button" onClick={() => setQuery("")} aria-label={t("Clear search")} className="absolute right-1.5 top-1/2 grid h-10 w-10 -translate-y-1/2 place-items-center rounded-xl text-muted-foreground hover:bg-tint"><X className="h-4 w-4" /></button> : null}
+      <div className="flex justify-end -mb-1">
+        <button
+          type="button"
+          onClick={() => {
+            if (searchOpen) {
+              setQuery("");
+              setFilter("all");
+            }
+            setSearchOpen(!searchOpen);
+          }}
+          aria-label={t("Search recipes")}
+          aria-expanded={searchOpen}
+          className={`inline-flex min-h-10 items-center gap-2 rounded-full border px-3 text-xs font-semibold shadow-sm transition ${
+            searchOpen ? "border-primary bg-primary text-primary-foreground" : "border-[#D4CCB8] bg-[#FBF7EC] text-[#555A3E]"
+          }`}
+        >
+          <Search className="h-4 w-4" />
+          {t("Search")}
+        </button>
       </div>
 
-      <div className="flex gap-2 overflow-x-auto pb-1 no-scrollbar">
-        {([
-          ["all", "All"],
-          ["baking", "Baking"],
-          ["cooking", "Cooking"],
-          ["spreads", "Spreads"],
-          ["favorites", "Favorites"],
-        ] as const).map(([value, label]) => <button key={value} type="button" onClick={() => setFilter(value)} className={`shrink-0 rounded-full px-3 py-2 text-xs font-semibold ring-1 ring-border ${filter === value ? "bg-primary text-primary-foreground" : "bg-tint"}`}>{t(label)}</button>)}
-      </div>
+      {searchOpen ? (
+        <div className="space-y-2 rounded-[22px] border border-border/60 bg-surface/70 p-3 shadow-sm">
+          <div className="relative">
+            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            <Input value={query} onChange={(event) => setQuery(event.target.value)} placeholder={t("Search recipes…")} className="h-11 rounded-2xl border-border/70 bg-background pl-10 pr-11 shadow-none" />
+            {query ? <button type="button" onClick={() => setQuery("")} aria-label={t("Clear search")} className="absolute right-1 top-1/2 grid h-9 w-9 -translate-y-1/2 place-items-center rounded-xl text-muted-foreground hover:bg-tint"><X className="h-4 w-4" /></button> : null}
+          </div>
+          <div className="flex gap-2 overflow-x-auto pb-1 no-scrollbar">
+            {([
+              ["all", "All"],
+              ["baking", "Baking"],
+              ["cooking", "Cooking"],
+              ["spreads", "Spreads"],
+              ["favorites", "Favorites"],
+            ] as const).map(([value, label]) => <button key={value} type="button" onClick={() => setFilter(value)} className={`shrink-0 rounded-full px-3 py-2 text-xs font-semibold ring-1 ring-border ${filter === value ? "bg-primary text-primary-foreground" : "bg-tint"}`}>{t(label)}</button>)}
+          </div>
+        </div>
+      ) : null}
 
       {importOpen ? (
         <div className="rounded-[28px] border border-border/70 bg-surface p-4 shadow-sm ring-1 ring-border/60">
