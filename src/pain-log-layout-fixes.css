@@ -18,31 +18,32 @@
 }
 
 /* Blueberry Cramp pain: keep the existing functional info button, but place it
-   beside the CRAMP PAIN heading rather than in a separate row under the scale. */
-[data-bixbo-log-surface="standard"] section:has(> p + div button[aria-label="Cramp pain scale"]) {
+   beside the CRAMP PAIN heading rather than in a separate row under the scale.
+   Both current UI languages are covered because aria-label is localized. */
+[data-bixbo-log-surface="standard"] section:has(> p + div button:is([aria-label="Cramp pain scale"], [aria-label="Stupnica bolesti pri kŕčoch"])) {
   display: grid;
   grid-template-columns: max-content max-content minmax(0, 1fr);
   align-items: center;
   column-gap: 6px;
 }
 
-[data-bixbo-log-surface="standard"] section:has(> p + div button[aria-label="Cramp pain scale"]) > p {
+[data-bixbo-log-surface="standard"] section:has(> p + div button:is([aria-label="Cramp pain scale"], [aria-label="Stupnica bolesti pri kŕčoch"])) > p {
   grid-column: 1;
   grid-row: 1;
   margin-bottom: 0 !important;
 }
 
-[data-bixbo-log-surface="standard"] section:has(> p + div button[aria-label="Cramp pain scale"]) > p + div {
+[data-bixbo-log-surface="standard"] section:has(> p + div button:is([aria-label="Cramp pain scale"], [aria-label="Stupnica bolesti pri kŕčoch"])) > p + div {
   display: contents;
 }
 
-[data-bixbo-log-surface="standard"] section:has(> p + div button[aria-label="Cramp pain scale"]) > p + div > div:first-child {
+[data-bixbo-log-surface="standard"] section:has(> p + div button:is([aria-label="Cramp pain scale"], [aria-label="Stupnica bolesti pri kŕčoch"])) > p + div > div:first-child {
   grid-column: 1 / -1;
   grid-row: 2;
   margin-top: 8px;
 }
 
-[data-bixbo-log-surface="standard"] section:has(> p + div button[aria-label="Cramp pain scale"]) > p + div > div.flex.justify-end {
+[data-bixbo-log-surface="standard"] section:has(> p + div button:is([aria-label="Cramp pain scale"], [aria-label="Stupnica bolesti pri kŕčoch"])) > p + div > div.flex.justify-end {
   grid-column: 2;
   grid-row: 1;
   justify-content: flex-start;
