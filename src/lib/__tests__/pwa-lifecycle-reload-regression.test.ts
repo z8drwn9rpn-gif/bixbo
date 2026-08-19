@@ -21,6 +21,8 @@ describe("iOS PWA reload and lifecycle hardening", () => {
     expect(appWorker).toContain('updateViaCache: "none"');
     expect(appWorker).toContain("registration.update()");
     expect(pushWorker).toContain('__BIXBO_DEPLOY_SHA__');
+    expect(pushWorker).toContain("BIXBO_SW_REPLACES_ACTIVE_WORKER");
+    expect(pushWorker).toContain("Boolean(self.registration.active)");
     expect(pushWorker).toContain("claimClientsAndRefreshForDeployment");
     expect(pushWorker).toContain("client.navigate");
     expect(packageJson).toContain("scripts/stamp-service-worker.mjs");
