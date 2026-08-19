@@ -165,7 +165,7 @@ export function HomeSummaryOverlay({ data, onClose, onOpenCalendar, initialMonth
     month.periodDays.length ? { key: "period", icon: <Ico e="🫐" size={21} />, label: t("Blueberry"), meta: `${month.periodDays.length} ${month.periodDays.length === 1 ? t("day") : t("days")}`, value: month.periodText, accent: "#7467D8" } : null,
     month.pregnancyLogDays ? { key: "pregnancy", icon: <Ico e="🤰" size={21} />, label: t("Pregnancy log"), meta: `${month.pregnancyLogDays} ${t("days logged")}`, value: t("Logged"), accent: "#B8768B" } : null,
     month.postpartumLogDays ? { key: "postpartum", icon: <Ico e="🫶" size={21} />, label: t("Postpartum log"), meta: `${month.postpartumLogDays} ${t("days logged")}`, value: t("Logged"), accent: "#A8798F" } : null,
-    month.customLogCount ? { key: "customLogs", icon: <Ico e="➕" size={21} />, label: t("Custom logs"), meta: meta(month.customLogCount), value: `${month.customLogCount}`, accent: "#6F7F52" } : null,
+    month.customLogCount ? { key: "customLogs", icon: <Ico e="➕" size={21} />, label: t("Other saved entries"), meta: meta(month.customLogCount), value: `${month.customLogCount}`, accent: "#6F7F52" } : null,
     month.additionalFieldCount ? { key: "additionalFields", icon: <Ico e="🧩" size={21} />, label: t("Additional fields"), meta: meta(month.additionalFieldCount), value: `${month.additionalFieldCount}`, accent: "#7D719A" } : null,
     month.noteEntryCount ? { key: "notes", icon: <NoteIcon size={21} />, label: t("Notes"), meta: meta(month.noteEntryCount), value: t("Logged"), accent: "#B89A36" } : null,
   ].filter((row): row is NonNullable<typeof row> => row !== null);
@@ -174,7 +174,7 @@ export function HomeSummaryOverlay({ data, onClose, onOpenCalendar, initialMonth
 
   return createPortal(
     <div className="fixed inset-0 z-[950] flex items-center justify-center px-5 pb-[max(1rem,env(safe-area-inset-bottom))] pt-[max(1rem,env(safe-area-inset-top))]">
-      <button type="button" aria-label={t("Close summary")} className="absolute inset-0 bg-black/40 backdrop-blur-[1px]" onClick={onClose} />
+      <button type="button" aria-label={t("Close summary")} data-bixbo-overlay-backdrop="month-summary" className="absolute inset-0 bg-black/40 backdrop-blur-[1px]" onClick={onClose} />
       <section className="relative z-10 flex max-h-[82dvh] w-full max-w-[350px] flex-col overflow-hidden rounded-[30px] border border-border/70 bg-background shadow-[0_24px_70px_-30px_rgba(24,31,17,.55),0_6px_20px_-12px_rgba(24,31,17,.35)]">
         <div className="shrink-0 px-5 pb-3 pt-5">
           <div className="flex items-start justify-between gap-3">

@@ -46,6 +46,11 @@ const THEME_BOOTSTRAP_SCRIPT = `(() => {
     root.dataset.themeChoice = choice;
     root.dataset.theme = isDark ? "dark" : "light";
     root.dataset.browser = isSamsungInternet ? "samsung-internet" : "other";
+    const ua = navigator.userAgent || "";
+    const isIOS = /iPhone|iPad|iPod/i.test(ua) || (/Macintosh/i.test(ua) && (navigator.maxTouchPoints || 0) > 1);
+    const isStandalone = navigator.standalone === true || (window.matchMedia && window.matchMedia("(display-mode: standalone)").matches);
+    if (isIOS && isStandalone) root.dataset.bixboIosStandalone = "true";
+    else delete root.dataset.bixboIosStandalone;
     root.classList.toggle("dark", isDark);
     root.classList.toggle("light", !isDark);
     root.style.colorScheme = isDark ? "dark" : "only light";

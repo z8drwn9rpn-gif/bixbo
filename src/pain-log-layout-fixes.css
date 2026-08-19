@@ -1,0 +1,16 @@
+/* Pain wizard pages 2–5 use the same top gap below the sticky wizard header.
+   Existing space-y-4 continues to provide the equal gap between questions. */
+div.flex.min-h-full.flex-col.px-5.pb-4.pt-0.touch-pan-y > div.block:has([data-bixbo-log-field-id="parts"]),
+div.flex.min-h-full.flex-col.px-5.pb-4.pt-0.touch-pan-y > div.space-y-4:has([data-bixbo-log-field-id="quality"]),
+div.flex.min-h-full.flex-col.px-5.pb-4.pt-0.touch-pan-y > div.space-y-4:has([data-bixbo-log-field-id="symptoms"]),
+div.flex.min-h-full.flex-col.px-5.pb-4.pt-0.touch-pan-y > div.space-y-4.pt-1 {
+  padding-top: 1rem !important;
+}
+
+/* The main Pain scale has its own explanation dialog rather than Field's
+   shared legend state. Hide the fixed date pill for that dialog too so no
+   explanation can ever sit underneath the date control. */
+html:has(.fixed.inset-0[role="presentation"] [role="dialog"][aria-modal="true"]) [data-bixbo-log-date-control] {
+  display: none !important;
+  pointer-events: none !important;
+}
