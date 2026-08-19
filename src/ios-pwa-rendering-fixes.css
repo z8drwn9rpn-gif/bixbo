@@ -46,7 +46,27 @@
       box-shadow: none !important;
     }
 
-    header[data-bixbo-app-header][data-bixbo-home-header="true"] [data-bixbo-display-title],
+    /* Do not use ui-rounded/font-black for the Home wordmark in an installed
+       iOS PWA. WebKit can synthesize that heavy rounded face and rasterize the
+       tightly tracked glyph run as a soft bitmap even when every blur/filter is
+       disabled. Use the native UI face at a real supported weight and whole-px
+       tracking instead. */
+    header[data-bixbo-app-header][data-bixbo-home-header="true"] [data-bixbo-display-title] {
+      font-family: -apple-system, BlinkMacSystemFont, "Helvetica Neue", Arial, sans-serif !important;
+      font-weight: 800 !important;
+      font-synthesis: none !important;
+      font-kerning: none !important;
+      letter-spacing: -1px !important;
+      text-shadow: none !important;
+      -webkit-text-stroke: 0 !important;
+      filter: none !important;
+      transform: none !important;
+      -webkit-font-smoothing: auto !important;
+      text-rendering: auto !important;
+      opacity: 1 !important;
+      box-shadow: none !important;
+    }
+
     header[data-bixbo-app-header][data-bixbo-home-header="true"] [data-bixbo-display-title] + a {
       text-shadow: none !important;
       -webkit-text-stroke: 0 !important;
