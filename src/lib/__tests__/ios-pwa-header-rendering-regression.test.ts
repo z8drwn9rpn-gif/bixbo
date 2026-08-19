@@ -28,12 +28,18 @@ describe("iPhone standalone PWA header rendering", () => {
     expect(css).not.toContain("text-rendering: geometricPrecision");
   });
 
-  it("renders the Home title in a single flat host with no neighbouring soft shadow", () => {
+  it("renders the Home title as real inline vector geometry with no text glyph layer", () => {
     expect(appShell).toContain('isHomeHeader ? (');
     expect(appShell).toContain('<div data-bixbo-app-title className="min-w-0"');
     expect(appShell).toContain('style={{ filter: isHomeHeader ? "none" : BIXBO_MASCOT_FILTER }}');
     expect(appShell).not.toContain("portrait:shadow-[0_0_40px_-24px");
-    expect(home).toContain('textShadow: "none", filter: "none" }}>BIXBO</span>');
-    expect(home).not.toContain('textShadow: roundedDisplayShadow }}>BIXBO</span>');
+    expect(home).toContain("function BixboHomeWordmark()");
+    expect(home).toContain("data-bixbo-home-wordmark");
+    expect(home).toContain('aria-label="BIXBO"');
+    expect(home).toContain('<BixboHomeWordmark />');
+    expect(home).not.toContain('>BIXBO</span>');
+    expect(css).toContain("[data-bixbo-home-wordmark]");
+    expect(css).not.toContain("mask-image:");
+    expect(css).not.toContain("-webkit-mask-image:");
   });
 });
