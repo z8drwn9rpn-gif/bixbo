@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { htmlToPlainText, sanitizeNoteHtml } from "../noteText";
+import { compactRecipeSpacing, htmlToPlainText, sanitizeNoteHtml } from "../noteText";
 
 describe("Notes text helpers", () => {
   it("removes dangerous embedded content and inline event handlers", () => {
@@ -20,6 +20,56 @@ describe("Notes text helpers", () => {
     expect(plain).toContain("First & second");
     expect(plain).toContain("Third\nFourth");
     expect(plain).toContain("• Item");
+  });
+
+  it("removes blank lines inside recipes but keeps one separator between recipes", () => {
+    const source = [
+      "🧁 BAKING",
+      "",
+      "🥐 Perfect Classic Cinnamon Rolls",
+      "🧾 Suroviny",
+      "Cesto",
+      "- 180 ml mlieka",
+      "",
+      "Krémová poleva",
+      "- 225 g cream cheese",
+      "",
+      "📋 Postup",
+      "",
+      "1. Aktivuj droždie",
+      "2. Premiešaj cesto",
+      "",
+      "🍫 Brownies",
+      "- 60 g múky",
+      "",
+      "Postup",
+      "",
+      "1. Zmiešaj suroviny",
+    ].join("\n");
+
+    expect(compactRecipeSpacing(source)).toBe([
+      "🧁 BAKING",
+      "",
+      "🥐 Perfect Classic Cinnamon Rolls",
+      "🧾 Suroviny",
+      "Cesto",
+      "- 180 ml mlieka",
+      "Krémová poleva",
+      "- 225 g cream cheese",
+      "📋 Postup",
+      "1. Aktivuj droždie",
+      "2. Premiešaj cesto",
+      "",
+      "🍫 Brownies",
+      "- 60 g múky",
+      "Postup",
+      "1. Zmiešaj suroviny",
+    ].join("\n"));
+  });
+
+  it("does not compact ordinary notes", () => {
+    const source = "First paragraph\n\nSecond paragraph";
+    expect(compactRecipeSpacing(source)).toBe(source);
   });
 
   it("returns empty text for an empty note", () => {
