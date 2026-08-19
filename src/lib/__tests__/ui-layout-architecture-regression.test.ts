@@ -44,7 +44,7 @@ describe("UI layout architecture regressions", () => {
     expect(log).toContain('orderedCats.length === 9 && index === 5 ? "col-start-2" : ""');
     expect(log).not.toContain("const radiusX = 112;");
     expect(nav).toContain("data-bixbo-bottom-nav");
-    expect(nav).toContain('paddingBottom: "max(2px, calc(env(safe-area-inset-bottom) - 16px))"');
+    expect(nav).toContain('paddingBottom: "max(0px, calc(env(safe-area-inset-bottom) - 30px))"');
     expect(notes).toContain("[&>span]:inline");
     expect(css).toContain('body[data-bixbo-log-menu-open="true"] [data-bixbo-bottom-nav]');
     expect(css).not.toContain("nth-of-type");
