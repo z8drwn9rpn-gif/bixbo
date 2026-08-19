@@ -24,6 +24,7 @@ import {
   X,
 } from "@/components/icons/BixboIcons";
 import { NoteEditor } from "./notes-editor";
+import { RecipesView } from "@/features/notes/RecipesView";
 import { useI18n } from "@/hooks/useI18n";
 import { sanitizeNoteHtml } from "@/features/notes/noteText";
 
@@ -40,7 +41,7 @@ export const Route = createFileRoute("/notes")({
 });
 
 type FolderIconComponent = (props: IconProps) => ReactElement;
-type NotesView = "all" | "folders" | "archived";
+type NotesView = "all" | "recipes" | "folders" | "archived";
 type NoteColor = NonNullable<Note["color"]>;
 type FolderIconKey = "note" | "health" | "idea" | "food";
 
@@ -375,6 +376,7 @@ function NotesPage() {
 
     return safeNotebook
       .filter((note) => {
+        if (note.kind === "recipe") return false;
         if (screen === "archived") {
           if (!note.archived) return false;
         } else if (note.archived) {
@@ -463,7 +465,7 @@ function NotesPage() {
   return (
     <AppShell
       title={title}
-      right={
+      right={screen === "recipes" && !openFolder ? undefined : (
         <button
           type="button"
           onClick={() => createNote()}
@@ -472,33 +474,36 @@ function NotesPage() {
         >
           <Plus className="h-5 w-5" />
         </button>
-      }
+      )}
     >
       <div className="mx-auto w-full max-w-[980px] space-y-5 px-5 pt-3 pb-[calc(104px+env(safe-area-inset-bottom))] lg:px-0 lg:pb-12">
-        <div className="relative">
-          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-          <Input
-            value={query}
-            onChange={(event) => setQuery(event.target.value)}
-            placeholder={t("Search notes…")}
-            className="h-12 rounded-2xl border-border/70 bg-surface pl-10 pr-11 shadow-sm ring-1 ring-border/70"
-          />
-          {query && (
-            <button
-              type="button"
-              onClick={() => setQuery("")}
-              className="absolute right-1.5 top-1/2 grid h-10 w-10 -translate-y-1/2 place-items-center rounded-xl text-muted-foreground transition hover:bg-tint focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-              aria-label={t("Clear search")}
-            >
-              <X className="h-4 w-4" />
-            </button>
-          )}
-        </div>
+        {screen !== "recipes" && (
+          <div className="relative">
+            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              value={query}
+              onChange={(event) => setQuery(event.target.value)}
+              placeholder={t("Search notes…")}
+              className="h-12 rounded-2xl border-border/70 bg-surface pl-10 pr-11 shadow-sm ring-1 ring-border/70"
+            />
+            {query && (
+              <button
+                type="button"
+                onClick={() => setQuery("")}
+                className="absolute right-1.5 top-1/2 grid h-10 w-10 -translate-y-1/2 place-items-center rounded-xl text-muted-foreground transition hover:bg-tint focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                aria-label={t("Clear search")}
+              >
+                <X className="h-4 w-4" />
+              </button>
+            )}
+          </div>
+        )}
 
         {!openFolder && (
-          <div className="grid grid-cols-3 gap-1 rounded-2xl bg-tint p-1 ring-1 ring-border/60">
+          <div className="grid grid-cols-4 gap-1 rounded-2xl bg-tint p-1 ring-1 ring-border/60">
             {[
               { key: "all" as const, label: "Notes" },
+              { key: "recipes" as const, label: "Recipes" },
               { key: "folders" as const, label: "Folders" },
               { key: "archived" as const, label: "Archive" },
             ].map((item) => (
@@ -516,7 +521,9 @@ function NotesPage() {
           </div>
         )}
 
-        {screen === "folders" && !openFolder ? (
+        {screen === "recipes" && !openFolder ? (
+          <RecipesView data={view} update={update} />
+        ) : screen === "folders" && !openFolder ? (
           <section>
             <div className="mb-3 flex items-center justify-between">
               <h2 className="font-serif text-2xl">{t("Folders")}</h2>
@@ -528,7 +535,7 @@ function NotesPage() {
 
             <div className="overflow-hidden rounded-3xl border border-border/70 bg-surface shadow-sm ring-1 ring-border/80">
               {safeFolders.map((folder, index) => {
-                const count = safeNotebook.filter((note) => note.folderId === folder.id && !note.archived).length;
+                const count = safeNotebook.filter((note) => note.kind !== "recipe" && note.folderId === folder.id && !note.archived).length;
 
                 return (
                   <div

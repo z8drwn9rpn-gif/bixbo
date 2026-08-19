@@ -247,6 +247,7 @@ export function HomePage() {
         </div>
 
         {!maleMode && isAdminOwnerAccount() && <div style={{ order: layoutOrder(view, "home", "birthControl", 20) }}><BirthControlSummaryCard data={view} dateKey={selected} onOpen={() => { setHakAnchor(fromKey(selected)); setHakOpen(true); }} /></div>}
+
         <PregnancyHomeCard data={view} />
         <PostpartumHomeCard data={view} />
         {!cycleTrackingHidden && <NextPeriodHomeCard data={view} />}
