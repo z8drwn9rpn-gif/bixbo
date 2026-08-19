@@ -72,7 +72,20 @@ describe("10/10 release gates", () => {
     expect(ci).toContain("Browser release gate");
   });
 
-  it("checks live PWA infrastructure after production deploy", () => {
+  it("makes deployment success prove the live PWA contract and publish its exact SHA", () => {
+    const deploy = read(".github/workflows/deploy-cloudflare.yml");
+
+    expect(deploy).toContain("/manifest.json");
+    expect(deploy).toContain("/bixbo-push-sw.js");
+    expect(deploy).toContain("/bixbo-offline-runtime.js");
+    expect(deploy).toContain("networkFirstNavigation");
+    expect(deploy).toContain("x-content-type-options: nosniff");
+    expect(deploy).toContain("content-security-policy");
+    expect(deploy).toContain("Live PWA verify");
+    expect(deploy).toContain("**Commit:** \\`${DEPLOY_SHA}\\`");
+  });
+
+  it("checks live PWA infrastructure again after production deploy", () => {
     const smoke = read(".github/workflows/production-smoke.yml");
 
     expect(smoke).toContain("/manifest.json");
