@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useI18n } from "@/hooks/useI18n";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { nowHHMM, updateDayLog } from "@/lib/storage";
+import { nowHHMM, updateDayLog, type DayLog } from "@/lib/storage";
 import { Chip, Field, SaveBar, toggleIn, type UpdateFn } from "./LogFormPrimitives";
 
 export interface EyesEpisode {
@@ -14,7 +14,7 @@ export interface EyesEpisode {
   note?: string;
 }
 
-type DayLogWithEyes = Parameters<Parameters<typeof updateDayLog>[2]>[0] & { eyes?: EyesEpisode[] };
+type DayLogWithEyes = DayLog & { eyes?: EyesEpisode[] };
 
 const VISION_CHANGES = [
   "Blurred vision",
