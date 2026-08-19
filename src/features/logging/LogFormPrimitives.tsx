@@ -1,5 +1,6 @@
 import { SemanticIcoText } from "@/components/icons/BixboFoodIcons";
-import { Children, isValidElement, useRef, useState, type ReactNode } from "react";
+import { Children, isValidElement, useEffect, useRef, useState, type ReactNode } from "react";
+import { markScaleLegendOpen } from "@/lib/scaleLegendOverlay";
 import { useI18n } from "@/hooks/useI18n";
 import { TrText } from "@/features/logging/TrText";
 import { SheetFooter } from "@/components/ui/sheet";
@@ -28,6 +29,11 @@ export function Field({ label, children, schemaFieldId }: { label: string; child
   const { t } = useI18n();
   const [scaleInfoOpen, setScaleInfoOpen] = useState(false);
   const displayLabel = label;
+
+  useEffect(() => {
+    if (!scaleInfoOpen) return;
+    return markScaleLegendOpen();
+  }, [scaleInfoOpen]);
 
   const scaleChild = Children.toArray(children).find((child) => {
     if (!isValidElement(child)) return false;
