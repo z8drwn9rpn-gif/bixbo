@@ -2,9 +2,13 @@
    Keep these rules isolated from normal Safari, Android and desktop browsers. */
 @supports (-webkit-touch-callout: none) {
   @media (display-mode: standalone) {
-    header[data-bixbo-app-header][data-bixbo-home-header="true"] {
+    /* Home deliberately does not use a <header> element. Keeping this top bar
+       in ordinary document flow prevents WebKit from promoting the BIXBO
+       wordmark and greeting into the soft sticky-header compositor layer. */
+    [data-bixbo-home-paint-island] {
       position: relative !important;
       top: auto !important;
+      z-index: auto !important;
       -webkit-backdrop-filter: none !important;
       backdrop-filter: none !important;
       filter: none !important;
@@ -19,7 +23,7 @@
       background-image: none !important;
     }
 
-    header[data-bixbo-app-header][data-bixbo-home-header="true"] [data-bixbo-app-title] {
+    [data-bixbo-home-paint-island] [data-bixbo-app-title] {
       overflow: visible !important;
       text-overflow: clip !important;
       white-space: normal !important;
@@ -36,8 +40,8 @@
       text-rendering: auto !important;
     }
 
-    header[data-bixbo-app-header][data-bixbo-home-header="true"] [data-bixbo-app-title] *,
-    header[data-bixbo-app-header][data-bixbo-home-header="true"] img {
+    [data-bixbo-home-paint-island] [data-bixbo-app-title] *,
+    [data-bixbo-home-paint-island] img {
       filter: none !important;
       transform: none !important;
       perspective: none !important;
@@ -46,10 +50,9 @@
       box-shadow: none !important;
     }
 
-    /* The Home wordmark is now a real inline SVG in React source. It has no
-       font glyphs, pseudo-elements, data-URI masks or synthetic font weight. */
-    header[data-bixbo-app-header][data-bixbo-home-header="true"] [data-bixbo-home-wordmark],
-    header[data-bixbo-app-header][data-bixbo-home-header="true"] [data-bixbo-home-wordmark] * {
+    /* The Home wordmark is real inline SVG geometry in React source. */
+    [data-bixbo-home-paint-island] [data-bixbo-home-wordmark],
+    [data-bixbo-home-paint-island] [data-bixbo-home-wordmark] * {
       filter: none !important;
       transform: none !important;
       perspective: none !important;
@@ -59,7 +62,7 @@
       shape-rendering: auto !important;
     }
 
-    header[data-bixbo-app-header][data-bixbo-home-header="true"] [data-bixbo-home-wordmark] + a {
+    [data-bixbo-home-paint-island] [data-bixbo-home-wordmark] + a {
       text-shadow: none !important;
       -webkit-text-stroke: 0 !important;
       filter: none !important;
