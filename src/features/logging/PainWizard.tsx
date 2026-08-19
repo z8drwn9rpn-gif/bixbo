@@ -92,7 +92,7 @@ import { getScaleDesc } from "@/lib/scaleDescriptions";
 import { Chip, CustomChipList, DurationField, Field, IntensityScale, stripEmoji, toggleIn } from "./LogFormPrimitives";
 import type { UpdateFn } from "./LogFormPrimitives";
 import { PanicForm, TetanyForm } from "./EpisodeForms";
-import { EyesForm, type EyesEpisode } from "./EyesForm";
+import { EyesEpisodeField, type EyesEpisode } from "./EyesEpisodeField";
 
 export function PainWizard({
   date,
@@ -108,11 +108,7 @@ export function PainWizard({
   initialEntry?: PainEntry;
 }) {
   const { t } = useI18n();
-  /**
-   * The newest pain entry for the selected day. A new entry can reuse this
-   * state and only add what changed (for example a headache several hours later).
-   * Editing an existing entry never uses this shortcut.
-   */
+  // Latest real pain entry used by symptom-only follow-ups.
   const latestPain = useMemo(() => {
     if (initialEntry) return undefined;
     // Symptom-only follow-ups are children of a real pain entry, not new pain measurements.
@@ -980,31 +976,7 @@ export function PainWizard({
               </div>
             )}
           </div>
-          <div>
-            <Field label="Eyes?">
-              <div className="mt-1 flex gap-2">
-                <Chip active={!eyesOn} onClick={() => { setEyesOn(false); setEyesDraft(undefined); }}>
-                  No
-                </Chip>
-                <Chip active={eyesOn} onClick={() => setEyesOn(true)}>
-                  Yes — log it
-                </Chip>
-              </div>
-            </Field>
-            {eyesOn && (
-              <div className="mt-3 rounded-2xl border border-border p-3">
-                <LogSchemaContext.Provider value={null}>
-                  <EyesForm
-                    date={date}
-                    update={update}
-                    onDone={() => setEyesOn(false)}
-                    embedded
-                    onDraftChange={setEyesDraft}
-                  />
-                </LogSchemaContext.Provider>
-              </div>
-            )}
-          </div>
+          <EyesEpisodeField date={date} update={update} active={eyesOn} setActive={setEyesOn} setDraft={setEyesDraft} />
         </div>
       )}
 

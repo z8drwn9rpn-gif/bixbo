@@ -53,6 +53,7 @@ import {
 } from "@/lib/storage";
 import { ScheduledDosePopup, type ScheduledDoseTarget } from "@/components/home/ScheduledDosePopup";
 import { DayOverviewSexCard } from "@/components/home/DayOverviewSexCard";
+import { DayOverviewEyesCard } from "@/components/home/DayOverviewEyesCard";
 import { DayOverviewCard as Card, DayOverviewDeleteButton as DeleteBtn } from "@/components/home/DayOverviewPrimitives";
 import { getTakenScheduledItems, isScheduledDoseTaken, scheduledDoseKey } from "@/lib/medicationAdherence";
 
@@ -126,6 +127,7 @@ export function DayPreview({
       (log.pain?.length ||
         log.tetany?.length ||
         log.panic?.length ||
+        log.eyes?.length ||
         log.period ||
         log.periodInfo?.level ||
         log.food?.length ||
@@ -561,6 +563,12 @@ export function DayPreview({
           </ul>
         </Card>
       ) : null}
+
+      <DayOverviewEyesCard
+        entries={log?.eyes ?? []}
+        date={date}
+        update={update}
+      />
 
       {!cycleTrackingHidden &&
         !!(
