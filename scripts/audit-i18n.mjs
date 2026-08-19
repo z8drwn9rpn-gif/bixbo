@@ -25,6 +25,10 @@ const allowed = new Set([
   // User-facing labels in this module still go through useI18n(); the Slovak
   // literals are parser tokens needed to import existing notes without edits.
   "src/features/notes/RecipesView.tsx",
+  // Recipe note compaction uses the same Slovak parser vocabulary, and its
+  // regression test contains source-note fixtures rather than rendered UI copy.
+  "src/features/notes/noteText.ts",
+  "src/features/notes/__tests__/noteText.test.ts",
   // These modules deliberately colocate explicit EN/SK copy.
   "src/routes/auth.tsx",
   "src/routes/onboarding.tsx",
