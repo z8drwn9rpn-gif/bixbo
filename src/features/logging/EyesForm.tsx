@@ -2,12 +2,19 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useI18n } from "@/hooks/useI18n";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import {
-  nowHHMM,
-  updateDayLog,
-  type EyesEpisode,
-} from "@/lib/storage";
+import { nowHHMM, updateDayLog } from "@/lib/storage";
 import { Chip, Field, SaveBar, toggleIn, type UpdateFn } from "./LogFormPrimitives";
+
+export interface EyesEpisode {
+  id: string;
+  time: string;
+  affected: "left" | "right" | "both";
+  painWithMovement: boolean;
+  visionChanges: string[];
+  note?: string;
+}
+
+type DayLogWithEyes = Parameters<Parameters<typeof updateDayLog>[2]>[0] & { eyes?: EyesEpisode[] };
 
 const VISION_CHANGES = [
   "Blurred vision",
@@ -57,12 +64,15 @@ export function EyesForm({
 
   const save = () => {
     const editing = Boolean(initialEntry);
-    updateDayLog(update, date, (log) => ({
-      ...log,
-      eyes: editing
-        ? (log.eyes ?? []).map((entry) => (entry.id === draft.id ? draft : entry))
-        : [...(log.eyes ?? []), draft],
-    }));
+    updateDayLog(update, date, (log) => {
+      const current = log as DayLogWithEyes;
+      return {
+        ...log,
+        eyes: editing
+          ? (current.eyes ?? []).map((entry) => (entry.id === draft.id ? draft : entry))
+          : [...(current.eyes ?? []), draft],
+      };
+    });
     onDone();
   };
 
