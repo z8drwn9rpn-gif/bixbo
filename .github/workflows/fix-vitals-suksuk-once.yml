@@ -5,12 +5,15 @@ on:
     branches: [main]
     paths:
       - ".github/workflows/fix-vitals-suksuk-once.yml"
+  issues:
+    types: [edited]
 
 permissions:
   contents: write
 
 jobs:
   patch:
+    if: github.event_name == 'push' || github.event.issue.number == 229
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
