@@ -40,6 +40,38 @@ function ProfileCardIcon({ size = 14 }: { size?: number }) {
   );
 }
 
+function BixboHomeWordmark() {
+  return (
+    <svg
+      data-bixbo-home-wordmark
+      viewBox="0 0 150 40"
+      role="img"
+      aria-label="BIXBO"
+      className="block h-[35px] w-[138px] shrink-0 text-foreground sm:h-[38px] sm:w-[146px]"
+      fill="none"
+      focusable="false"
+    >
+      <path
+        fill="currentColor"
+        fillRule="evenodd"
+        d="M2 3h15c8 0 13 4 13 10 0 4-2 7-6 9 5 1 8 4 8 8 0 7-5 10-14 10H2V3Zm8 7v9h6c4 0 6-2 6-4.5S20 10 16 10h-6Zm0 15v8h7c4 0 7-1 7-4s-3-4-7-4h-7Z"
+      />
+      <rect x="36" y="3" width="8" height="37" rx="4" fill="currentColor" />
+      <path d="M51 7 72 36M72 7 51 36" stroke="currentColor" strokeWidth="8" strokeLinecap="round" />
+      <path
+        fill="currentColor"
+        fillRule="evenodd"
+        d="M78 3h15c8 0 13 4 13 10 0 4-2 7-6 9 5 1 8 4 8 8 0 7-5 10-14 10H78V3Zm8 7v9h6c4 0 6-2 6-4.5S96 10 92 10h-6Zm0 15v8h7c4 0 7-1 7-4s-3-4-7-4h-7Z"
+      />
+      <path
+        fill="currentColor"
+        fillRule="evenodd"
+        d="M114 21c0-11 7-19 17-19s17 8 17 19-7 19-17 19-17-8-17-19Zm9 0c0 7 3 11 8 11s8-4 8-11-3-11-8-11-8 4-8 11Z"
+      />
+    </svg>
+  );
+}
+
 export function HomePage() {
   const { t, language } = useI18n();
   const { data, update, hydrated } = useBixbo();
@@ -204,7 +236,7 @@ export function HomePage() {
 
   return <AppShell
     big
-    title={<div className="flex flex-col leading-tight"><span data-bixbo-display-title className="text-[37px] font-black tracking-[-0.045em] leading-[0.92] sm:text-[41px]" style={{ fontFamily: roundedDisplayFont, WebkitTextStroke: "0", textShadow: "none", filter: "none" }}>BIXBO</span><Link to="/profile" className="mt-1 inline-flex w-fit items-center gap-1 text-xs font-normal tracking-normal text-muted-foreground transition hover:text-foreground active:opacity-70" aria-label={t("Profile")} title={t("Profile")}><span className="text-[#6E7C45]"><ProfileCardIcon size={13} /></span><span>{t("Hi")}, {view.settings.userName?.trim() || t("there")}</span><Ico e="❤️" size={12} /><ChevronRight className="h-3 w-3 text-[#7E8B59]" /></Link></div>}
+    title={<div className="flex flex-col leading-tight"><BixboHomeWordmark /><Link to="/profile" className="mt-1 inline-flex w-fit items-center gap-1 text-xs font-normal tracking-normal text-muted-foreground transition hover:text-foreground active:opacity-70" aria-label={t("Profile")} title={t("Profile")}><span className="text-[#6E7C45]"><ProfileCardIcon size={13} /></span><span>{t("Hi")}, {view.settings.userName?.trim() || t("there")}</span><Ico e="❤️" size={12} /><ChevronRight className="h-3 w-3 text-[#7E8B59]" /></Link></div>}
     right={<Link to="/report" className="flex min-h-11 items-center gap-1 rounded-2xl bg-primary/10 px-2 text-primary ring-1 ring-primary/20 transition hover:bg-primary/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary" aria-label={t("PDF reports")} title={t("PDF reports")}><BixboConnectIcon size={22} /><span className="text-[10px] font-extrabold tracking-[0.12em]">PDF</span></Link>}
   >
     <div className="lg:mx-auto lg:grid lg:w-full lg:max-w-[1480px] lg:grid-cols-[minmax(0,1.62fr)_minmax(340px,0.95fr)] lg:items-start lg:gap-4 lg:px-0 xl:grid-cols-[minmax(0,1.72fr)_minmax(380px,1fr)] xl:gap-5">
