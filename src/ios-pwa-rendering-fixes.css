@@ -46,49 +46,20 @@
       box-shadow: none !important;
     }
 
-    /* The visible BIXBO wordmark is geometry, not font rasterization. The text
-       remains in the DOM/accessibility tree, while WebKit paints a vector mask
-       made from rounded SVG paths. This removes synthetic font weight, glyph
-       hinting and fractional text rasterization from the equation entirely. */
-    header[data-bixbo-app-header][data-bixbo-home-header="true"] [data-bixbo-display-title] {
-      display: block !important;
-      position: relative !important;
-      width: 138px !important;
-      height: 35px !important;
-      flex: 0 0 auto !important;
-      overflow: visible !important;
-      color: transparent !important;
-      font-size: 0 !important;
-      line-height: 0 !important;
-      letter-spacing: 0 !important;
-      text-shadow: none !important;
-      -webkit-text-stroke: 0 !important;
+    /* The Home wordmark is now a real inline SVG in React source. It has no
+       font glyphs, pseudo-elements, data-URI masks or synthetic font weight. */
+    header[data-bixbo-app-header][data-bixbo-home-header="true"] [data-bixbo-home-wordmark],
+    header[data-bixbo-app-header][data-bixbo-home-header="true"] [data-bixbo-home-wordmark] * {
       filter: none !important;
       transform: none !important;
+      perspective: none !important;
+      will-change: auto !important;
       opacity: 1 !important;
       box-shadow: none !important;
+      shape-rendering: auto !important;
     }
 
-    header[data-bixbo-app-header][data-bixbo-home-header="true"] [data-bixbo-display-title]::before {
-      content: "";
-      display: block;
-      width: 138px;
-      height: 35px;
-      background-color: var(--foreground);
-      -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 150 40'%3E%3Cpath fill='black' fill-rule='evenodd' d='M2 3h15c8 0 13 4 13 10 0 4-2 7-6 9 5 1 8 4 8 8 0 7-5 10-14 10H2V3Zm8 7v9h6c4 0 6-2 6-4.5S20 10 16 10h-6Zm0 15v8h7c4 0 7-1 7-4s-3-4-7-4h-7Z'/%3E%3Crect x='36' y='3' width='8' height='37' rx='4' fill='black'/%3E%3Cpath d='M51 7 72 36M72 7 51 36' stroke='black' stroke-width='8' stroke-linecap='round'/%3E%3Cpath fill='black' fill-rule='evenodd' d='M78 3h15c8 0 13 4 13 10 0 4-2 7-6 9 5 1 8 4 8 8 0 7-5 10-14 10H78V3Zm8 7v9h6c4 0 6-2 6-4.5S96 10 92 10h-6Zm0 15v8h7c4 0 7-1 7-4s-3-4-7-4h-7Z'/%3E%3Cpath fill='black' fill-rule='evenodd' d='M114 21c0-11 7-19 17-19s17 8 17 19-7 19-17 19-17-8-17-19Zm9 0c0 7 3 11 8 11s8-4 8-11-3-11-8-11-8 4-8 11Z'/%3E%3C/svg%3E");
-      -webkit-mask-repeat: no-repeat;
-      -webkit-mask-position: left center;
-      -webkit-mask-size: contain;
-      mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 150 40'%3E%3Cpath fill='black' fill-rule='evenodd' d='M2 3h15c8 0 13 4 13 10 0 4-2 7-6 9 5 1 8 4 8 8 0 7-5 10-14 10H2V3Zm8 7v9h6c4 0 6-2 6-4.5S20 10 16 10h-6Zm0 15v8h7c4 0 7-1 7-4s-3-4-7-4h-7Z'/%3E%3Crect x='36' y='3' width='8' height='37' rx='4' fill='black'/%3E%3Cpath d='M51 7 72 36M72 7 51 36' stroke='black' stroke-width='8' stroke-linecap='round'/%3E%3Cpath fill='black' fill-rule='evenodd' d='M78 3h15c8 0 13 4 13 10 0 4-2 7-6 9 5 1 8 4 8 8 0 7-5 10-14 10H78V3Zm8 7v9h6c4 0 6-2 6-4.5S96 10 92 10h-6Zm0 15v8h7c4 0 7-1 7-4s-3-4-7-4h-7Z'/%3E%3Cpath fill='black' fill-rule='evenodd' d='M114 21c0-11 7-19 17-19s17 8 17 19-7 19-17 19-17-8-17-19Zm9 0c0 7 3 11 8 11s8-4 8-11-3-11-8-11-8 4-8 11Z'/%3E%3C/svg%3E");
-      mask-repeat: no-repeat;
-      mask-position: left center;
-      mask-size: contain;
-      filter: none !important;
-      transform: none !important;
-      opacity: 1 !important;
-    }
-
-    header[data-bixbo-app-header][data-bixbo-home-header="true"] [data-bixbo-display-title] + a {
+    header[data-bixbo-app-header][data-bixbo-home-header="true"] [data-bixbo-home-wordmark] + a {
       text-shadow: none !important;
       -webkit-text-stroke: 0 !important;
       filter: none !important;
