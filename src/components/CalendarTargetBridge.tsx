@@ -25,6 +25,11 @@ function currentMonthPrefix() {
   return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
 }
 
+function preferredScrollBehavior(): ScrollBehavior {
+  if (typeof window === "undefined" || typeof window.matchMedia !== "function") return "auto";
+  return window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth";
+}
+
 export function CalendarTargetBridge() {
   const pathname = useRouterState({ select: (state) => state.location.pathname });
   const hash = useRouterState({ select: (state) => state.location.hash });
@@ -95,7 +100,7 @@ export function CalendarTargetBridge() {
           const overviewHeading = Array.from(main?.querySelectorAll<HTMLElement>("h2") ?? []).find(
             (item) => item !== heading && item.textContent?.trim(),
           );
-          overviewHeading?.scrollIntoView({ behavior: "smooth", block: "start" });
+          overviewHeading?.scrollIntoView({ behavior: preferredScrollBehavior(), block: "start" });
         }, 120);
         finish();
       } else if (attempts < 40) {

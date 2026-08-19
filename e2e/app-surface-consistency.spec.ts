@@ -20,8 +20,30 @@ async function openLogMenu(page: Page) {
   await expect(firstCategory).toBeVisible();
 }
 
+const CORE_ROUTES = [
+  "/",
+  "/insights",
+  "/patterns",
+  "/notes",
+  "/settings",
+  "/profile",
+  "/meds",
+  "/notifications",
+] as const;
+
 test("core routes stay inside the viewport", async ({ page }) => {
-  for (const route of ["/", "/insights", "/notes", "/settings"]) {
+  for (const route of CORE_ROUTES) {
+    await page.goto(route);
+    await expect(page.locator("body")).toBeVisible();
+    await expectNoHorizontalOverflow(page);
+  }
+});
+
+test("mobile core routes stay inside the viewport in landscape", async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name === "desktop", "Mobile landscape consistency contract.");
+  await page.setViewportSize({ width: 844, height: 390 });
+
+  for (const route of CORE_ROUTES) {
     await page.goto(route);
     await expect(page.locator("body")).toBeVisible();
     await expectNoHorizontalOverflow(page);

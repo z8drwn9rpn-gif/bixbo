@@ -17,6 +17,16 @@ describe("production hardening contracts", () => {
     expect(logSheet).toContain("window.cancelAnimationFrame(frame)");
   });
 
+  it("shields fast repeated Back/Next/Save actions from double activation and click-through", () => {
+    expect(logSheet).toContain("const LOG_ACTION_SHIELD_MS = 250");
+    expect(logSheet).toContain("lastActionButton");
+    expect(logSheet).toContain("shieldUntil");
+    expect(logSheet).toContain("event.stopImmediatePropagation()");
+    expect(logSheet).toContain('document.addEventListener("click", onClickCapture, true)');
+    expect(logSheet).toContain("[data-bixbo-log-save-bar]");
+    expect(logSheet).toContain('[data-bixbo-log-surface="pain"] > div > div.sticky');
+  });
+
   it("makes shared icon buttons touch-sized and ordinary Button instances non-submit by default", () => {
     expect(button).toContain('icon: "h-11 w-11"');
     expect(button).toContain('type: type ?? "button"');

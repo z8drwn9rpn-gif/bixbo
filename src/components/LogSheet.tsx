@@ -4,6 +4,7 @@ import { createPortal } from "react-dom";
 import { LogSheet as LogSheetRoot } from "@/features/logging/LogSheetRoot";
 
 type LogSheetProps = ComponentProps<typeof LogSheetRoot>;
+const LOG_ACTION_SHIELD_MS = 250;
 
 export function LogSheet(props: LogSheetProps) {
   const [targetDate, setTargetDate] = useState(props.date);
@@ -15,6 +16,50 @@ export function LogSheet(props: LogSheetProps) {
   useEffect(() => {
     if (props.open) setTargetDate(props.date);
   }, [props.date, props.open]);
+
+  useEffect(() => {
+    // Full-screen logs close without a transition. A second click from a fast
+    // double tap can otherwise land on the newly exposed Home control. Keep a
+    // tiny action-only shield that survives the log closing because LogSheet
+    // itself remains mounted on Home.
+    let shieldUntil = 0;
+    let lastActionButton: HTMLButtonElement | null = null;
+    let lastActionAt = 0;
+
+    const stop = (event: MouseEvent) => {
+      event.preventDefault();
+      event.stopPropagation();
+      event.stopImmediatePropagation();
+    };
+
+    const onClickCapture = (event: MouseEvent) => {
+      const now = performance.now();
+      const target = event.target;
+      if (!(target instanceof Element)) return;
+
+      const button = target.closest<HTMLButtonElement>("button");
+      const inSaveBar = Boolean(button?.closest("[data-bixbo-log-save-bar]"));
+      const inPainBar = Boolean(button?.closest('[data-bixbo-log-surface="pain"] > div > div.sticky'));
+      const isLogAction = Boolean(button && (inSaveBar || inPainBar));
+
+      if (!isLogAction) {
+        if (now < shieldUntil) stop(event);
+        return;
+      }
+
+      if (button === lastActionButton && now - lastActionAt < LOG_ACTION_SHIELD_MS) {
+        stop(event);
+        return;
+      }
+
+      lastActionButton = button;
+      lastActionAt = now;
+      shieldUntil = now + LOG_ACTION_SHIELD_MS;
+    };
+
+    document.addEventListener("click", onClickCapture, true);
+    return () => document.removeEventListener("click", onClickCapture, true);
+  }, []);
 
   useEffect(() => {
     if (!props.open) {
