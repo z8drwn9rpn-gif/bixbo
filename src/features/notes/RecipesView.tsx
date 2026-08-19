@@ -378,7 +378,6 @@ function statusLabel(status?: RecipeStatus): string {
   return "Ready";
 }
 
-
 function RecipePotSketch({ className = "" }: { className?: string }) {
   return (
     <svg viewBox="0 0 92 72" className={className} fill="none" aria-hidden="true">
@@ -525,6 +524,25 @@ export function RecipesView({ data, update }: { data: BixboData; update: UpdateF
     }));
   };
 
+  const deleteRecipe = (note: Note) => {
+    if (!window.confirm(t("Delete this recipe? This cannot be undone."))) return;
+    update((currentData) => ({
+      ...currentData,
+      notebook: currentData.notebook.filter((saved) => saved.id !== note.id),
+    }));
+  };
+
+  const deleteAllRecipes = () => {
+    if (!recipes.length || !window.confirm(t("Delete all recipes? This cannot be undone."))) return;
+    update((currentData) => ({
+      ...currentData,
+      notebook: currentData.notebook.filter((saved) => saved.kind !== "recipe"),
+    }));
+    setQuery("");
+    setFilter("all");
+    setIndex(0);
+  };
+
   const analyzeNote = () => {
     const source = sourceNotes.find((note) => note.id === sourceNoteId);
     setPreview(source ? parseRecipeNote(source.content) : []);
@@ -586,24 +604,24 @@ export function RecipesView({ data, update }: { data: BixboData; update: UpdateF
               />
             </div>
 
-            <div className="mt-4 grid grid-cols-4 border-y border-[#CFC5AD] py-3 text-[#45483A]">
+            <div className="mt-4 grid grid-cols-[0.82fr_0.82fr_1.08fr_1.28fr] border-y border-[#CFC5AD] py-3 text-[#45483A]">
               <label className="min-w-0 border-r border-[#D8D0BC] pr-2">
-                <span className="flex items-center gap-1 text-[9px] font-bold uppercase tracking-[0.12em] text-[#7B8063]"><RecipeMetaIcon kind="time" />{t("Prep")}</span>
+                <span className="flex items-center gap-0.5 whitespace-nowrap text-[8px] font-bold uppercase tracking-[0.06em] text-[#7B8063]"><RecipeMetaIcon kind="time" />{t("Prep")}</span>
                 <Input inputMode="numeric" placeholder="—" value={editor.prepMinutes} onChange={(event) => setEditor({ ...editor, prepMinutes: event.target.value })} className="mt-1 h-8 rounded-none border-0 bg-transparent px-0 text-sm shadow-none focus-visible:ring-0" />
               </label>
               <label className="min-w-0 border-r border-[#D8D0BC] px-2">
-                <span className="flex items-center gap-1 text-[9px] font-bold uppercase tracking-[0.12em] text-[#7B8063]"><RecipeMetaIcon kind="time" />{t("Cook")}</span>
+                <span className="flex items-center gap-0.5 whitespace-nowrap text-[8px] font-bold uppercase tracking-[0.06em] text-[#7B8063]"><RecipeMetaIcon kind="time" />{t("Cook")}</span>
                 <div className="flex items-center gap-1">
                   <Input inputMode="numeric" placeholder="—" value={editor.cookMinutes} onChange={(event) => setEditor({ ...editor, cookMinutes: event.target.value })} className="mt-1 h-8 min-w-0 rounded-none border-0 bg-transparent px-0 text-sm shadow-none focus-visible:ring-0" />
                   <Input inputMode="numeric" placeholder="°C" value={editor.temperatureC} onChange={(event) => setEditor({ ...editor, temperatureC: event.target.value })} className="mt-1 h-8 w-12 rounded-none border-0 bg-transparent px-0 text-[11px] shadow-none focus-visible:ring-0" />
                 </div>
               </label>
               <label className="min-w-0 border-r border-[#D8D0BC] px-2">
-                <span className="flex items-center gap-1 text-[9px] font-bold uppercase tracking-[0.12em] text-[#7B8063]"><RecipeMetaIcon kind="people" />{t("Portions")}</span>
+                <span className="flex items-center gap-0.5 whitespace-nowrap text-[8px] font-bold uppercase tracking-[0.06em] text-[#7B8063]"><RecipeMetaIcon kind="people" />{t("Portions")}</span>
                 <Input placeholder="—" value={editor.portions} onChange={(event) => setEditor({ ...editor, portions: event.target.value })} className="mt-1 h-8 rounded-none border-0 bg-transparent px-0 text-sm shadow-none focus-visible:ring-0" />
               </label>
               <label className="min-w-0 pl-2">
-                <span className="flex items-center gap-1 text-[9px] font-bold uppercase tracking-[0.12em] text-[#7B8063]"><RecipeMetaIcon kind="tag" />{t("Category")}</span>
+                <span className="flex items-center gap-0.5 whitespace-nowrap text-[8px] font-bold uppercase tracking-[0.06em] text-[#7B8063]"><RecipeMetaIcon kind="tag" />{t("Category")}</span>
                 <select value={editor.category} onChange={(event) => setEditor({ ...editor, category: event.target.value as RecipeCategory })} className="mt-1 h-8 w-full bg-transparent text-[11px] font-semibold outline-none">
                   {(Object.keys(CATEGORY_LABELS) as RecipeCategory[]).map((category) => <option key={category} value={category}>{t(CATEGORY_LABELS[category])}</option>)}
                 </select>
@@ -726,21 +744,21 @@ export function RecipesView({ data, update }: { data: BixboData; update: UpdateF
               {current.recipe.status && current.recipe.status !== "ready" ? <p className={`mt-1 text-[10px] font-semibold ${current.recipe.status === "needs-review" ? "text-destructive" : "text-[#7D815F]"}`}>{t(statusLabel(current.recipe.status))}</p> : null}
             </div>
 
-            <div className="mt-2 grid grid-cols-4 border-y border-[#CFC5AD] py-3 text-[#45483A]">
+            <div className="mt-2 grid grid-cols-[0.82fr_0.82fr_1.08fr_1.28fr] border-y border-[#CFC5AD] py-3 text-[#45483A]">
               <div className="min-w-0 border-r border-[#D8D0BC] pr-2">
-                <p className="flex items-center gap-1 text-[9px] font-bold uppercase tracking-[0.12em] text-[#7B8063]"><RecipeMetaIcon kind="time" />{t("Prep")}</p>
+                <p className="flex items-center gap-0.5 whitespace-nowrap text-[8px] font-bold uppercase tracking-[0.06em] text-[#7B8063]"><RecipeMetaIcon kind="time" />{t("Prep")}</p>
                 <p className="mt-1 text-[12px] font-semibold">{current.recipe.prepMinutes != null ? `${current.recipe.prepMinutes} min` : "—"}</p>
               </div>
               <div className="min-w-0 border-r border-[#D8D0BC] px-2">
-                <p className="flex items-center gap-1 text-[9px] font-bold uppercase tracking-[0.12em] text-[#7B8063]"><RecipeMetaIcon kind="time" />{t("Cook")}</p>
+                <p className="flex items-center gap-0.5 whitespace-nowrap text-[8px] font-bold uppercase tracking-[0.06em] text-[#7B8063]"><RecipeMetaIcon kind="time" />{t("Cook")}</p>
                 <p className="mt-1 text-[12px] font-semibold">{current.recipe.cookMinutes != null ? `${current.recipe.cookMinutes} min` : "—"}{current.recipe.temperatureC != null ? <span className="block text-[9px] font-medium text-[#777B61]">{current.recipe.temperatureC} °C</span> : null}</p>
               </div>
               <div className="min-w-0 border-r border-[#D8D0BC] px-2">
-                <p className="flex items-center gap-1 text-[9px] font-bold uppercase tracking-[0.12em] text-[#7B8063]"><RecipeMetaIcon kind="people" />{t("Portions")}</p>
+                <p className="flex items-center gap-0.5 whitespace-nowrap text-[8px] font-bold uppercase tracking-[0.06em] text-[#7B8063]"><RecipeMetaIcon kind="people" />{t("Portions")}</p>
                 <p className="mt-1 truncate text-[12px] font-semibold">{current.recipe.portions || "—"}</p>
               </div>
               <div className="min-w-0 pl-2">
-                <p className="flex items-center gap-1 text-[9px] font-bold uppercase tracking-[0.12em] text-[#7B8063]"><RecipeMetaIcon kind="tag" />{t("Category")}</p>
+                <p className="flex items-center gap-0.5 whitespace-nowrap text-[8px] font-bold uppercase tracking-[0.06em] text-[#7B8063]"><RecipeMetaIcon kind="tag" />{t("Category")}</p>
                 <p className="mt-1 truncate text-[11px] font-semibold">{t(CATEGORY_LABELS[current.recipe.category])}</p>
               </div>
             </div>
@@ -766,9 +784,10 @@ export function RecipesView({ data, update }: { data: BixboData; update: UpdateF
               <span className="h-px flex-1 bg-[#CFC5AD]" />
             </div>
 
-            <div className="mt-3 flex items-center justify-between gap-2">
+            <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
               <button type="button" onClick={() => setEditor(editorFromNote(current))} className="rounded-full border border-[#C9C0AA] bg-white/30 px-3 py-1.5 text-[10px] font-semibold text-[#555A3E]">{t("Edit recipe")}</button>
               <button type="button" onClick={() => toggleFavorite(current)} className={`rounded-full px-3 py-1.5 text-[10px] font-semibold ring-1 ring-[#C9C0AA] ${current.recipe.favorite ? "bg-[#7C8A43] text-white" : "bg-white/25 text-[#555A3E]"}`}>{t("Favorite")}</button>
+              <button type="button" onClick={() => deleteRecipe(current)} className="rounded-full border border-destructive/35 bg-destructive/5 px-3 py-1.5 text-[10px] font-semibold text-destructive">{t("Delete recipe")}</button>
             </div>
           </article>
         </div>
@@ -794,6 +813,7 @@ export function RecipesView({ data, update }: { data: BixboData; update: UpdateF
         <div className="flex flex-col items-center gap-2 pt-1">
           <Button className="h-14 w-full max-w-[320px] rounded-full text-base font-semibold shadow-sm" onClick={() => setEditor(blankEditor())}><Plus className="h-5 w-5" />{t("New recipe")}</Button>
           <button type="button" onClick={() => { setImportOpen(true); setPreview([]); }} className="min-h-10 rounded-full px-4 text-xs font-semibold text-muted-foreground hover:bg-tint">{t("Import from Notes")}</button>
+          {recipes.length > 0 ? <button type="button" onClick={deleteAllRecipes} className="min-h-10 rounded-full px-4 text-xs font-semibold text-destructive hover:bg-destructive/5">{t("Delete all recipes")}</button> : null}
         </div>
       ) : null}
     </section>
