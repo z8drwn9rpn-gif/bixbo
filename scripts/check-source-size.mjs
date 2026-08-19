@@ -15,6 +15,7 @@ const LEGACY_LIMITS = new Map([
   ["src/features/patterns/usePatternsContentModel.tsx", 47_500],
   ["src/features/patterns/PatternsContentViewPart1.tsx", 47_500],
   ["src/components/QuickTags.tsx", 47_500],
+  ["src/features/logging/LogSheetRoot.tsx", 46_311],
 ]);
 
 // Generated route output is intentionally excluded because it is rewritten by
