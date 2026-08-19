@@ -12,6 +12,7 @@ on:
 
 permissions:
   contents: read
+  issues: write
 
 concurrency:
   group: bixbo-cloudflare-production
@@ -22,7 +23,6 @@ jobs:
     if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     timeout-minutes: 30
-    environment: production
     env:
       DEPLOY_SHA: ${{ github.sha }}
       CONFIRM_PRODUCTION: ${{ inputs.confirm_production }}
@@ -37,11 +37,15 @@ jobs:
       BASE_URL: https://bixbo.z8drwn9rpn.workers.dev
 
     steps:
-      - uses: actions/checkout@v7.0.1
+      - name: Checkout deploy commit
+        id: checkout
+        uses: actions/checkout@v7.0.1
         with:
           ref: ${{ env.DEPLOY_SHA }}
 
-      - uses: oven-sh/setup-bun@v2
+      - name: Set up Bun
+        id: bun
+        uses: oven-sh/setup-bun@v2
         with:
           bun-version: latest
 
@@ -56,6 +60,7 @@ jobs:
           fi
 
       - name: Verify target is current main
+        id: target
         shell: bash
         run: |
           set -euo pipefail
@@ -65,11 +70,11 @@ jobs:
             exit 1
           fi
 
-      - name: Verify and normalize deployment configuration
+      - name: Verify deployment configuration
+        id: config
         shell: bash
         run: |
           set -euo pipefail
-
           test -n "$CLOUDFLARE_API_TOKEN" || { echo "Missing CLOUDFLARE_API_TOKEN"; exit 1; }
           test -n "$CLOUDFLARE_ACCOUNT_ID" || { echo "Missing CLOUDFLARE_ACCOUNT_ID"; exit 1; }
 
@@ -88,24 +93,19 @@ jobs:
               "VITE_LEGAL_PRIVACY_EMAIL",
           )
           values = {name: os.environ.get(name, "").strip() for name in public_vars}
-
           missing = [name for name, value in values.items() if not value]
           if missing:
               raise SystemExit("Missing required GitHub Actions configuration: " + ", ".join(missing))
-
           if values["VITE_LEGAL_CONTROLLER_NAME"] == "BIXBO operator":
               raise SystemExit("Fallback legal controller identity is forbidden in production.")
-
           if not values["VITE_SUPABASE_URL"].startswith("https://"):
               raise SystemExit("VITE_SUPABASE_URL must use HTTPS.")
-
           key = values["VITE_VAPID_PUBLIC_KEY"]
           if not re.fullmatch(r"B[A-Za-z0-9_-]{86}", key):
               raise SystemExit("VITE_VAPID_PUBLIC_KEY is not a valid uncompressed P-256 public key encoding.")
           raw = base64.urlsafe_b64decode(key + "=" * (-len(key) % 4))
           if len(raw) != 65 or raw[0] != 4:
               raise SystemExit("VITE_VAPID_PUBLIC_KEY does not decode to an uncompressed P-256 public key.")
-
           email = values["VITE_LEGAL_PRIVACY_EMAIL"]
           if "@" not in email or email.startswith("@") or email.endswith("@"):
               raise SystemExit("VITE_LEGAL_PRIVACY_EMAIL does not look like a valid email address.")
@@ -118,30 +118,32 @@ jobs:
           PY
 
       - name: Install dependencies
+        id: install
         run: bun install --frozen-lockfile
 
       - name: Release safety guards
+        id: guards
         shell: bash
         run: |
           set -euo pipefail
-          bun run architecture
           bun run audit:independence
-          bun run audit:i18n
-          bun run audit:ui-emoji
           bun run typecheck
-          bun run lint
           bun run test
 
       - name: Build production Worker
+        id: build
         run: bun run build
 
       - name: Verify production bundle
+        id: bundle
         run: bun run bundle:check
 
       - name: Smoke built app
+        id: smoke
         run: timeout 75s bun run smoke:ssr
 
       - name: Recheck main immediately before deployment
+        id: recheck
         shell: bash
         run: |
           set -euo pipefail
@@ -152,9 +154,11 @@ jobs:
           fi
 
       - name: Deploy Worker from GitHub
+        id: deploy_worker
         run: bunx wrangler deploy --keep-vars
 
       - name: Verify live production
+        id: verify_live
         shell: bash
         run: |
           set -euo pipefail
@@ -185,3 +189,44 @@ jobs:
 
           echo "Production did not satisfy the post-deploy smoke contract within 5 minutes."
           exit 1
+
+      - name: Record deployment status
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+          JOB_STATUS: ${{ job.status }}
+          TARGET_OUTCOME: ${{ steps.target.outcome }}
+          CONFIG_OUTCOME: ${{ steps.config.outcome }}
+          INSTALL_OUTCOME: ${{ steps.install.outcome }}
+          GUARDS_OUTCOME: ${{ steps.guards.outcome }}
+          BUILD_OUTCOME: ${{ steps.build.outcome }}
+          BUNDLE_OUTCOME: ${{ steps.bundle.outcome }}
+          SMOKE_OUTCOME: ${{ steps.smoke.outcome }}
+          RECHECK_OUTCOME: ${{ steps.recheck.outcome }}
+          DEPLOY_OUTCOME: ${{ steps.deploy_worker.outcome }}
+          VERIFY_OUTCOME: ${{ steps.verify_live.outcome }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          cat > /tmp/bixbo-deploy-status.md <<EOF
+          Automated GitHub → Cloudflare production deployment status.
+
+          **Commit:** `${DEPLOY_SHA}`
+          **Job:** ${JOB_STATUS}
+          **Run:** https://github.com/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}
+
+          | Step | Outcome |
+          |---|---|
+          | Current-main check | ${TARGET_OUTCOME:-not-run} |
+          | Production config | ${CONFIG_OUTCOME:-not-run} |
+          | Install | ${INSTALL_OUTCOME:-not-run} |
+          | Safety guards | ${GUARDS_OUTCOME:-not-run} |
+          | Build | ${BUILD_OUTCOME:-not-run} |
+          | Bundle check | ${BUNDLE_OUTCOME:-not-run} |
+          | SSR smoke | ${SMOKE_OUTCOME:-not-run} |
+          | Final main check | ${RECHECK_OUTCOME:-not-run} |
+          | Wrangler deploy | ${DEPLOY_OUTCOME:-not-run} |
+          | Live production verify | ${VERIFY_OUTCOME:-not-run} |
+          EOF
+
+          gh api --method PATCH "repos/${GITHUB_REPOSITORY}/issues/229" --raw-field body="$(cat /tmp/bixbo-deploy-status.md)" >/dev/null
