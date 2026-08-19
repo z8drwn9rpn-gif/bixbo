@@ -15,6 +15,7 @@ type WorkerMessage =
 
 const DEEP_LINK_RETRY_MS = 80;
 const DEEP_LINK_MAX_ATTEMPTS = 60;
+const DIRECT_LOG_TARGETS = new Set(["meds", "period", "pain", "temp", "food", "bowel", "workout", "sex"]);
 
 function validDate(value: unknown): value is string {
   return typeof value === "string" && /^\d{4}-\d{2}-\d{2}$/.test(value);
@@ -35,26 +36,40 @@ function timeFromAction(value: string | undefined): string {
   return `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
 }
 
+function medIdFromSlot(slot: string): string {
+  const separator = slot.lastIndexOf("@");
+  return separator > 0 ? slot.slice(0, separator) : slot;
+}
+
 function applyTakenAction(action: TakenAction | undefined) {
   if (!action || !validDate(action.date) || !validSlot(action.slot)) return;
 
-  setBixbo((data) => ({
-    ...data,
-    medLog: {
-      ...data.medLog,
-      [action.date]: {
-        ...(data.medLog[action.date] ?? {}),
-        [action.slot]: true,
+  setBixbo((data) => {
+    const medId = medIdFromSlot(action.slot);
+    const med = data.meds.find((entry) => String(entry.id) === medId);
+    const medName = med ? (med.dose ? `${med.name} ${med.dose}` : med.name) : undefined;
+
+    return {
+      ...data,
+      medLog: {
+        ...data.medLog,
+        [action.date]: {
+          ...(data.medLog[action.date] ?? {}),
+          [action.slot]: true,
+        },
       },
-    },
-    medLogTimes: {
-      ...data.medLogTimes,
-      [action.date]: {
-        ...(data.medLogTimes[action.date] ?? {}),
-        [action.slot]: data.medLogTimes[action.date]?.[action.slot] ?? timeFromAction(action.takenAt),
+      medLogTimes: {
+        ...data.medLogTimes,
+        [action.date]: {
+          ...(data.medLogTimes[action.date] ?? {}),
+          [action.slot]: data.medLogTimes[action.date]?.[action.slot] ?? timeFromAction(action.takenAt),
+        },
       },
-    },
-  }));
+      // Keep the human-readable medication snapshot when a dose is marked from
+      // a notification. Deleting the medication later must not erase history.
+      medNames: medName ? { ...(data.medNames ?? {}), [medId]: medName } : data.medNames,
+    };
+  });
 }
 
 function notificationPath(value: unknown): string | null {
@@ -126,16 +141,22 @@ function eventDate(eventId: string | null): string | null {
   return event?.startDate ?? null;
 }
 
+function requestedLogTarget(searchParams: URLSearchParams): string | null {
+  const value = searchParams.get("log");
+  if (value === "menu") return value;
+  return value && DIRECT_LOG_TARGETS.has(value) ? value : null;
+}
+
 function startNotificationDeepLink(): () => void {
   if (typeof window === "undefined" || window.location.pathname !== "/") return () => undefined;
 
   const initial = new URL(window.location.href);
   const legacyEventId = initial.searchParams.get("event");
   const calendarEventId = initial.searchParams.get("calendarEvent") ?? legacyEventId;
-  const wantsMeds = initial.searchParams.get("log") === "meds";
+  const logTarget = requestedLogTarget(initial.searchParams);
   const wantsCalendarEvents = initial.searchParams.get("calendar") === "events" || Boolean(legacyEventId);
 
-  if (!wantsMeds && !wantsCalendarEvents) return () => undefined;
+  if (!logTarget && !wantsCalendarEvents) return () => undefined;
 
   // Strip the legacy ?event= key before HomePage's normal editor deep-link
   // effect can consume it. Preserve the id under a notification-only key.
@@ -168,10 +189,24 @@ function startNotificationDeepLink(): () => void {
     if (cancelled) return;
     attempts += 1;
 
-    if (wantsMeds) {
-      const meds = document.querySelector<HTMLButtonElement>('button[data-log-category="meds"]');
-      if (meds) {
-        meds.click();
+    if (logTarget) {
+      const menuOpen = Boolean(document.querySelector("button[data-log-category]"));
+
+      if (logTarget === "menu") {
+        if (menuOpen) {
+          clearNotificationParams("log");
+          return;
+        }
+        if (attempts === 1 || attempts % 8 === 0) {
+          window.dispatchEvent(new CustomEvent("bixbo:toggle-log"));
+        }
+        retry();
+        return;
+      }
+
+      const targetButton = document.querySelector<HTMLButtonElement>(`button[data-log-category="${logTarget}"]`);
+      if (targetButton) {
+        targetButton.click();
         clearNotificationParams("log");
         return;
       }
@@ -179,7 +214,6 @@ function startNotificationDeepLink(): () => void {
       // HomePage listens for this event and opens the Log category chooser.
       // Retry the open request only while no category menu exists, so an
       // already-open menu can never be toggled closed by the retry loop.
-      const menuOpen = Boolean(document.querySelector("button[data-log-category]"));
       if (!menuOpen && (attempts === 1 || attempts % 8 === 0)) {
         window.dispatchEvent(new CustomEvent("bixbo:toggle-log"));
       }
@@ -194,10 +228,10 @@ function startNotificationDeepLink(): () => void {
         return;
       }
 
-      // The first direct button in the calendar header is the existing
-      // Calendar events / To do launcher. On an event notification the target
-      // month necessarily contains an event, so this control is present.
-      const calendarEvents = document.querySelector<HTMLButtonElement>(".bixbo-calendar > div > button");
+      // MonthCalendar exposes the events launcher as the first direct button in
+      // its calendar header. Restrict the query to a labelled button so layout
+      // wrappers cannot accidentally turn a decorative control into the target.
+      const calendarEvents = document.querySelector<HTMLButtonElement>(".bixbo-calendar > div > button[aria-label]");
       if (calendarEvents) {
         calendarEvents.click();
         clearNotificationParams("calendar", "calendarEvent", "event");

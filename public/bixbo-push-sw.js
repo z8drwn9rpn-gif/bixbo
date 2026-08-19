@@ -2,9 +2,24 @@
    Push + notification handling only. It intentionally has NO fetch handler and
    caches nothing, so it cannot serve stale HTML or interfere with app updates. */
 
-const BIXBO_PUSH_SW_VERSION = "2026.08.19.1";
+const BIXBO_PUSH_SW_VERSION = "2026.08.19.2";
 const MED_ACTION_DB = "bixbo-notification-actions";
 const MED_ACTION_STORE = "pending-med-actions";
+
+/*
+ * Notification taps are actions, not settings navigation. Keep the destination
+ * matrix here so both local and remote pushes get the same behavior even when
+ * an older sender still supplies the legacy `/` URL.
+ */
+const HOME_NOTIFICATION_TARGETS = Object.freeze({
+  meds: "/?log=meds",
+  period: "/?log=period",
+  dailyLog: "/?log=menu",
+  symptom: "/?log=pain",
+  mood: "/?log=menu",
+  hydration: "/?log=menu",
+  sleep: "/?log=temp",
+});
 
 self.addEventListener("install", (event) => {
   event.waitUntil(self.skipWaiting());
@@ -45,11 +60,20 @@ function notificationUrl(data) {
     if (eventId) return `/?calendar=events&calendarEvent=${encodeURIComponent(eventId)}`;
   }
 
-  // A medication notification tap means "log/tick today's meds", not "manage
-  // medication definitions". Normalize both legacy `/` and newer `/meds`
-  // payloads to the Home Log medication checklist.
-  if (category === "meds" && (explicit === "/" || explicit === "/meds")) return "/?log=meds";
+  // Manage Meds is configuration. A medication reminder always opens the
+  // daily checklist, including legacy pushes that used the /meds route.
+  if (category === "meds" && (explicit === "/" || explicit === "/meds")) {
+    return HOME_NOTIFICATION_TARGETS.meds;
+  }
 
+  // Older senders use `/` for most Home-based reminders. Normalize those taps
+  // to their actual action surface instead of dropping the user on generic Home.
+  if (explicit === "/" && HOME_NOTIFICATION_TARGETS[category]) {
+    return HOME_NOTIFICATION_TARGETS[category];
+  }
+
+  // Preserve intentional non-Home destinations (for example /insights or
+  // /notifications) exactly as supplied by the sender.
   return explicit;
 }
 

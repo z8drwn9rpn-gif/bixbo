@@ -21,6 +21,7 @@ describe("notification deep links", () => {
     expect(pushSubscription).toContain('url: "/notifications"');
     expect(worker).toContain("url: safeUrl(payload.url)");
     expect(worker).toContain("const url = notificationUrl(data)");
+    expect(worker).toContain("return explicit");
   });
 
   it("opens calendar event notifications in Calendar events instead of Event edit", () => {
@@ -34,7 +35,7 @@ describe("notification deep links", () => {
     expect(bridge).toContain('initial.searchParams.delete("event")');
     expect(bridge).toContain('initial.searchParams.set("calendar", "events")');
     expect(bridge).toContain('window.location.hash = `date=${date}`');
-    expect(bridge).toContain('document.querySelector<HTMLButtonElement>(".bixbo-calendar > div > button")');
+    expect(bridge).toContain('document.querySelector<HTMLButtonElement>(".bixbo-calendar > div > button[aria-label]")');
     expect(calendarTarget).toContain('window.location.hash === "#latest"');
     expect(calendarTarget).toContain('const explicit = /^#date=');
   });
@@ -43,10 +44,38 @@ describe("notification deep links", () => {
     const worker = readFileSync("public/bixbo-push-sw.js", "utf8");
     const bridge = readFileSync("src/components/MedicationNotificationActionBridge.tsx", "utf8");
 
-    expect(worker).toContain('if (category === "meds" && (explicit === "/" || explicit === "/meds")) return "/?log=meds"');
+    expect(worker).toContain('meds: "/?log=meds"');
+    expect(worker).toContain('explicit === "/meds"');
     expect(bridge).toContain('parsed.pathname === "/meds"');
     expect(bridge).toContain('parsed.searchParams.set("log", "meds")');
-    expect(bridge).toContain('button[data-log-category="meds"]');
+    expect(bridge).toContain('DIRECT_LOG_TARGETS = new Set(["meds"');
+    expect(bridge).toContain('button[data-log-category="${logTarget}"]');
     expect(bridge).toContain('new CustomEvent("bixbo:toggle-log")');
+  });
+
+  it("normalizes the Home reminder categories to action surfaces", () => {
+    const worker = readFileSync("public/bixbo-push-sw.js", "utf8");
+    const bridge = readFileSync("src/components/MedicationNotificationActionBridge.tsx", "utf8");
+
+    expect(worker).toContain('period: "/?log=period"');
+    expect(worker).toContain('dailyLog: "/?log=menu"');
+    expect(worker).toContain('symptom: "/?log=pain"');
+    expect(worker).toContain('mood: "/?log=menu"');
+    expect(worker).toContain('hydration: "/?log=menu"');
+    expect(worker).toContain('sleep: "/?log=temp"');
+    expect(worker).toContain('if (explicit === "/" && HOME_NOTIFICATION_TARGETS[category])');
+
+    expect(bridge).toContain('if (value === "menu") return value');
+    expect(bridge).toContain('DIRECT_LOG_TARGETS.has(value)');
+    expect(bridge).toContain('if (logTarget === "menu")');
+    expect(bridge).toContain('clearNotificationParams("log")');
+  });
+
+  it("snapshots a medication name when Taken is applied from a notification", () => {
+    const bridge = readFileSync("src/components/MedicationNotificationActionBridge.tsx", "utf8");
+
+    expect(bridge).toContain("function medIdFromSlot");
+    expect(bridge).toContain("data.meds.find");
+    expect(bridge).toContain("medNames: medName ?");
   });
 });

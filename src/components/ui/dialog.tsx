@@ -62,7 +62,7 @@ const DialogContent = React.forwardRef<
     >
       {children}
 
-      <DialogClose className="absolute right-4 top-4 rounded-full p-2 transition hover:bg-tint focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+      <DialogClose className="absolute right-3 top-3 grid h-11 w-11 place-items-center rounded-full transition hover:bg-tint focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
         <X size={18} />
         <span className="sr-only">Close</span>
       </DialogClose>

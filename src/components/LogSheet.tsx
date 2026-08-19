@@ -36,9 +36,25 @@ export function LogSheet(props: LogSheetProps) {
     };
 
     sync();
-    const observer = new MutationObserver(sync);
-    observer.observe(document.body, { childList: true, subtree: true, characterData: true });
-    return () => observer.disconnect();
+
+    // Opening/closing a log changes the DOM tree. Typing inside a log does not
+    // need to rescan the entire document. Batch structural mutations into one
+    // animation-frame sync so iOS does not do observer work for every keystroke.
+    let frame: number | null = null;
+    const scheduleSync = () => {
+      if (frame !== null) return;
+      frame = window.requestAnimationFrame(() => {
+        frame = null;
+        sync();
+      });
+    };
+    const observer = new MutationObserver(scheduleSync);
+    observer.observe(document.body, { childList: true, subtree: true });
+
+    return () => {
+      observer.disconnect();
+      if (frame !== null) window.cancelAnimationFrame(frame);
+    };
   }, [props.initial, props.open]);
 
   const formKey = `${props.initial ?? "menu"}:${props.open ? "open" : "closed"}`;

@@ -1,0 +1,44 @@
+/* Production interaction hardening.
+   Keep this layer small and behavior-oriented: touch targets, focus visibility,
+   reduced motion and the highest-risk mobile controls only. */
+
+body[data-bixbo-app-root] :focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
+
+body[data-bixbo-app-root] button,
+body[data-bixbo-app-root] a,
+body[data-bixbo-app-root] [role="button"] {
+  touch-action: manipulation;
+}
+
+@media (pointer: coarse) {
+  /* Native icon-only controls do not go through the shared Button component.
+     Give them a real 44px hit target without enlarging text/chip controls. */
+  body[data-bixbo-app-root] #main-content button.rounded-full:has(> svg):not(:has(> span:not(.sr-only))) {
+    min-width: 44px;
+    min-height: 44px;
+  }
+
+  body[data-bixbo-app-root] [data-bixbo-log-save-bar] button,
+  body[data-bixbo-app-root] [data-bixbo-log-surface="pain"] > div > div.sticky button,
+  body[data-bixbo-app-root] .bixbo-calendar > div > button[aria-label] {
+    min-height: 44px !important;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html:focus-within {
+    scroll-behavior: auto !important;
+  }
+
+  body[data-bixbo-app-root] *,
+  body[data-bixbo-app-root] *::before,
+  body[data-bixbo-app-root] *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

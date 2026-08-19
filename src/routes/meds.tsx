@@ -3,7 +3,7 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { ArrowLeft, Plus, Trash2, Pencil } from "@/components/icons/BixboExtraIcons";
 import { AppShell } from "@/components/AppShell";
-import { Ico, IcoText } from "@/components/icons/BixboExtraIcons";
+import { Ico } from "@/components/icons/BixboExtraIcons";
 import { useBixbo, EMPTY, type Med } from "@/lib/storage";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -58,7 +58,7 @@ function MedsPage() {
   return (
     <AppShell
       title={
-        <button onClick={() => navigate({ to: "/" })} className="flex items-center gap-2">
+        <button type="button" onClick={() => navigate({ to: "/" })} className="flex min-h-11 items-center gap-2">
           <ArrowLeft className="h-5 w-5" /> {t("Medications")}
         </button>
       }
@@ -105,32 +105,41 @@ function MedItemActions({ med, onSave, onDelete }: { med: Med; onSave: (m: Med) 
   const [menuOpen, setMenuOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
 
+  const deleteMedication = () => {
+    const message = t("Delete this medication? Historical logs will stay in your diary.");
+    if (typeof window !== "undefined" && !window.confirm(message)) return;
+    onDelete();
+  };
+
   return (
     <div className="relative shrink-0">
       <button
         type="button"
         onClick={() => setMenuOpen((value) => !value)}
-        className="grid h-8 w-8 place-items-center rounded-full text-lg font-bold leading-none text-muted-foreground transition hover:bg-tint hover:text-foreground"
+        className="grid h-11 w-11 place-items-center rounded-full text-lg font-bold leading-none text-muted-foreground transition hover:bg-tint hover:text-foreground"
         aria-label={t("More options")}
         aria-expanded={menuOpen}
+        aria-haspopup="menu"
       >
         ⋯
       </button>
       {menuOpen ? (
         <>
           <button type="button" aria-label={t("Close")} className="fixed inset-0 z-40 cursor-default" onClick={() => setMenuOpen(false)} />
-          <div className="absolute right-0 top-9 z-50 min-w-[132px] rounded-2xl border border-border/70 bg-background p-1.5 shadow-xl">
+          <div role="menu" className="absolute right-0 top-12 z-50 min-w-[148px] rounded-2xl border border-border/70 bg-background p-1.5 shadow-xl">
             <button
               type="button"
+              role="menuitem"
               onClick={() => { setMenuOpen(false); setEditOpen(true); }}
-              className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-xs font-semibold text-foreground transition hover:bg-tint"
+              className="flex min-h-11 w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-xs font-semibold text-foreground transition hover:bg-tint"
             >
               <Pencil className="h-3.5 w-3.5" /> {t("Edit")}
             </button>
             <button
               type="button"
-              onClick={() => { setMenuOpen(false); onDelete(); }}
-              className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-xs font-semibold text-destructive transition hover:bg-destructive/10"
+              role="menuitem"
+              onClick={() => { setMenuOpen(false); deleteMedication(); }}
+              className="flex min-h-11 w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-xs font-semibold text-destructive transition hover:bg-destructive/10"
             >
               <Trash2 className="h-3.5 w-3.5" /> {t("Delete")}
             </button>
@@ -166,14 +175,16 @@ function MedFields({ initial, onSave, onCancel }: { initial?: Med; onSave: (m: M
   const [note, setNote] = useState(initial?.note ?? "");
   const [times, setTimes] = useState<string[]>(initial?.times?.length ? initial.times : ["09:00", "15:00", "21:00"]);
   const [asNeeded, setAsNeeded] = useState(!!initial?.asNeeded);
+  const normalizedTimes = Array.from(new Set(times.map((value) => value.trim()).filter(Boolean))).sort();
+  const canSave = Boolean(name.trim()) && (asNeeded || normalizedTimes.length > 0);
 
   const save = () => {
-    if (!name.trim()) return;
+    if (!canSave) return;
     onSave({
       id: initial?.id ?? crypto.randomUUID(),
       name: name.trim(),
       dose: dose.trim() || undefined,
-      times: asNeeded ? [] : times.filter(Boolean),
+      times: asNeeded ? [] : normalizedTimes,
       asNeeded,
       note: note.trim() || undefined,
     });
@@ -201,24 +212,33 @@ function MedFields({ initial, onSave, onCancel }: { initial?: Med; onSave: (m: M
         </div>
         <div className="flex items-center justify-between rounded-xl bg-tint p-3">
           <span className="text-sm">{t("As needed")}</span>
-          <Switch checked={asNeeded} onCheckedChange={setAsNeeded} />
+          <Switch aria-label={t("As needed")} checked={asNeeded} onCheckedChange={setAsNeeded} />
         </div>
         {!asNeeded && (
           <div>
             <label className="text-xs font-medium">{t("Times")}</label>
             <div className="mt-2 space-y-2">
-              {times.map((t, i) => (
+              {times.map((timeValue, i) => (
                 <div key={i} className="flex gap-2">
                   <Input
                     type="time"
-                    value={t}
+                    value={timeValue}
+                    aria-label={`${t("Medication time")} ${i + 1}`}
                     onChange={(e) => setTimes(times.map((x, j) => (j === i ? e.target.value : x)))}
                   />
-                  <Button variant="outline" size="icon" onClick={() => setTimes(times.filter((_, j) => j !== i))}>
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    aria-label={`${t("Remove time")} ${i + 1}`}
+                    onClick={() => setTimes(times.filter((_, j) => j !== i))}
+                  >
                     −
                   </Button>
                 </div>
               ))}
+              {times.length === 0 && (
+                <p className="text-xs text-destructive">{t("Add at least one time or mark the medication as needed.")}</p>
+              )}
               <Button variant="outline" size="sm" onClick={() => setTimes([...times, "12:00"])}>
                 <Plus className="h-3 w-3" /> {t("Add time")}
               </Button>
@@ -230,7 +250,7 @@ function MedFields({ initial, onSave, onCancel }: { initial?: Med; onSave: (m: M
         <Button variant="outline" onClick={onCancel}>
           {t("Cancel")}
         </Button>
-        <Button onClick={save}>{t("Save")}</Button>
+        <Button onClick={save} disabled={!canSave}>{t("Save")}</Button>
       </DialogFooter>
     </>
   );
@@ -242,7 +262,7 @@ function AddMedButton({ onAdd }: { onAdd: (m: Med) => void }) {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button size="sm" className="rounded-full">
+        <Button size="sm" className="min-h-11 rounded-full">
           <Plus className="h-4 w-4" /> {t("Add")}
         </Button>
       </DialogTrigger>

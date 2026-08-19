@@ -54,11 +54,11 @@ async function closeCurrentLog(page: Page) {
   await expect(surface).toBeHidden();
 }
 
-test("standard logs keep Date flush with Back/Save while reserving content space below", async ({ page }) => {
+test("all standard logs keep Date flush with Back/Save while reserving content space below", async ({ page }) => {
   await page.goto("/");
   await expect(page.locator('nav[aria-label="Primary navigation"]')).toBeVisible();
 
-  for (const id of ["meds", "period", "sex"]) {
+  for (const id of ["meds", "period", "sex", "food", "bowel", "workout", "temp"]) {
     const surface = await openLogCategory(page, id);
     const saveBar = surface.locator("[data-bixbo-log-save-bar]");
     await expect(saveBar).toBeVisible();
