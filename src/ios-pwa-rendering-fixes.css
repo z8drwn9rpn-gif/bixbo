@@ -14,11 +14,12 @@
       contain: none !important;
       isolation: auto !important;
       opacity: 1 !important;
+      box-shadow: none !important;
       background-color: var(--background) !important;
       background-image: none !important;
     }
 
-    header[data-bixbo-app-header][data-bixbo-home-header="true"] h1[data-bixbo-app-title] {
+    header[data-bixbo-app-header][data-bixbo-home-header="true"] [data-bixbo-app-title] {
       overflow: visible !important;
       text-overflow: clip !important;
       white-space: normal !important;
@@ -30,17 +31,19 @@
       will-change: auto !important;
       contain: none !important;
       opacity: 1 !important;
+      box-shadow: none !important;
       -webkit-font-smoothing: auto !important;
-      text-rendering: geometricPrecision;
+      text-rendering: auto !important;
     }
 
-    header[data-bixbo-app-header][data-bixbo-home-header="true"] h1[data-bixbo-app-title] *,
+    header[data-bixbo-app-header][data-bixbo-home-header="true"] [data-bixbo-app-title] *,
     header[data-bixbo-app-header][data-bixbo-home-header="true"] img {
       filter: none !important;
       transform: none !important;
       perspective: none !important;
       will-change: auto !important;
       backface-visibility: visible !important;
+      box-shadow: none !important;
     }
 
     header[data-bixbo-app-header][data-bixbo-home-header="true"] [data-bixbo-display-title],
@@ -50,8 +53,9 @@
       filter: none !important;
       transform: none !important;
       -webkit-font-smoothing: auto !important;
-      text-rendering: geometricPrecision;
+      text-rendering: auto !important;
       opacity: 1 !important;
+      box-shadow: none !important;
     }
   }
 }
