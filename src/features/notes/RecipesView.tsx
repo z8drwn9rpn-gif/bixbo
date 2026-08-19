@@ -378,7 +378,6 @@ function statusLabel(status?: RecipeStatus): string {
   return "Ready";
 }
 
-
 function RecipePotSketch({ className = "" }: { className?: string }) {
   return (
     <svg viewBox="0 0 92 72" className={className} fill="none" aria-hidden="true">
@@ -523,6 +522,25 @@ export function RecipesView({ data, update }: { data: BixboData; update: UpdateF
         ? { ...saved, recipe: { ...saved.recipe, favorite: !saved.recipe.favorite }, updatedAt: Date.now() }
         : saved),
     }));
+  };
+
+  const deleteRecipe = (note: Note) => {
+    if (!window.confirm(t("Delete this recipe? This cannot be undone."))) return;
+    update((currentData) => ({
+      ...currentData,
+      notebook: currentData.notebook.filter((saved) => saved.id !== note.id),
+    }));
+  };
+
+  const deleteAllRecipes = () => {
+    if (!recipes.length || !window.confirm(t("Delete all recipes? This cannot be undone."))) return;
+    update((currentData) => ({
+      ...currentData,
+      notebook: currentData.notebook.filter((saved) => saved.kind !== "recipe"),
+    }));
+    setQuery("");
+    setFilter("all");
+    setIndex(0);
   };
 
   const analyzeNote = () => {
@@ -766,9 +784,10 @@ export function RecipesView({ data, update }: { data: BixboData; update: UpdateF
               <span className="h-px flex-1 bg-[#CFC5AD]" />
             </div>
 
-            <div className="mt-3 flex items-center justify-between gap-2">
+            <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
               <button type="button" onClick={() => setEditor(editorFromNote(current))} className="rounded-full border border-[#C9C0AA] bg-white/30 px-3 py-1.5 text-[10px] font-semibold text-[#555A3E]">{t("Edit recipe")}</button>
               <button type="button" onClick={() => toggleFavorite(current)} className={`rounded-full px-3 py-1.5 text-[10px] font-semibold ring-1 ring-[#C9C0AA] ${current.recipe.favorite ? "bg-[#7C8A43] text-white" : "bg-white/25 text-[#555A3E]"}`}>{t("Favorite")}</button>
+              <button type="button" onClick={() => deleteRecipe(current)} className="rounded-full border border-destructive/35 bg-destructive/5 px-3 py-1.5 text-[10px] font-semibold text-destructive">{t("Delete recipe")}</button>
             </div>
           </article>
         </div>
@@ -794,6 +813,7 @@ export function RecipesView({ data, update }: { data: BixboData; update: UpdateF
         <div className="flex flex-col items-center gap-2 pt-1">
           <Button className="h-14 w-full max-w-[320px] rounded-full text-base font-semibold shadow-sm" onClick={() => setEditor(blankEditor())}><Plus className="h-5 w-5" />{t("New recipe")}</Button>
           <button type="button" onClick={() => { setImportOpen(true); setPreview([]); }} className="min-h-10 rounded-full px-4 text-xs font-semibold text-muted-foreground hover:bg-tint">{t("Import from Notes")}</button>
+          {recipes.length > 0 ? <button type="button" onClick={deleteAllRecipes} className="min-h-10 rounded-full px-4 text-xs font-semibold text-destructive hover:bg-destructive/5">{t("Delete all recipes")}</button> : null}
         </div>
       ) : null}
     </section>
