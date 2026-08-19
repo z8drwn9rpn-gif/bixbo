@@ -9,6 +9,8 @@ import { nowHHMM, updateDayLog, type BixboData } from "@/lib/storage";
 
 type UpdateFn = (updater: (data: BixboData) => BixboData) => void;
 type DayLogs = BixboData["dayLogs"];
+type DayLog = DayLogs[string];
+type SleepEntry = { id: string; time: string; hours: number; quality?: string[] };
 
 export type QuickVitalMetric = "sleep" | "temperature" | "weight";
 
@@ -28,8 +30,9 @@ const META: Record<QuickVitalMetric, { title: string; icon: string; label: strin
 };
 
 function valueFor(metric: QuickVitalMetric, dayLogs: DayLogs, date: string): string {
+  if (metric === "sleep") return "";
   const day = dayLogs[date];
-  const raw = metric === "sleep" ? day?.sleepHours : metric === "temperature" ? day?.temperature : day?.weight;
+  const raw = metric === "temperature" ? day?.temperature : day?.weight;
   return raw == null ? "" : String(raw).replace(".", ",");
 }
 
@@ -83,12 +86,26 @@ export function QuickVitalSheet({ open, onOpenChange, metric, date, data, update
   const save = () => {
     const parsed = Number(value.replace(",", "."));
     if (!value.trim() || !Number.isFinite(parsed)) return;
-    if (metric === "sleep" && (parsed < 0 || parsed > 24)) return;
+    if (metric === "sleep" && (parsed <= 0 || parsed > 24)) return;
     if (metric === "temperature" && (parsed < 25 || parsed > 45)) return;
     if (metric === "weight" && (parsed <= 0 || parsed > 500)) return;
 
     updateDayLog(update, targetDate, (log) => {
-      if (metric === "sleep") return { ...log, sleepHours: parsed };
+      if (metric === "sleep") {
+        const logWithSleep = log as DayLog & { sleepEntries?: SleepEntry[] };
+        const existing: SleepEntry[] = logWithSleep.sleepEntries?.length
+          ? logWithSleep.sleepEntries
+          : log.sleepHours != null
+            ? [{ id: `legacy-sleep-${targetDate}`, time: "", hours: log.sleepHours, quality: Array.isArray(log.sleepQuality) ? log.sleepQuality : log.sleepQuality ? [log.sleepQuality] : undefined }]
+            : [];
+        const next = [...existing, { id: crypto.randomUUID(), time: nowHHMM(), hours: parsed }];
+        const total = next.reduce((sum, entry) => sum + entry.hours, 0);
+        return {
+          ...log,
+          sleepEntries: next,
+          sleepHours: Number(total.toFixed(2)),
+        } as DayLog & { sleepEntries?: SleepEntry[] };
+      }
       if (metric === "temperature") {
         return {
           ...log,
