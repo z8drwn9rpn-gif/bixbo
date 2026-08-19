@@ -23,6 +23,58 @@ const WRITE_DEDUPE_WINDOW_MS = 15_000;
 const inFlightWrites = new Map<string, Promise<Response>>();
 const recentSuccessfulWrites = new Map<string, RecentWrite>();
 
+export const BIXBO_AUTH_STORAGE_KEY = 'bixbo:supabase-auth:v1';
+const CANONICAL_LEGACY_AUTH_STORAGE_KEY = 'sb-wgdydwttzsveevkljkmr-auth-token';
+
+function legacyAuthStorageKeys(supabaseUrl: string): string[] {
+  const keys = new Set<string>([CANONICAL_LEGACY_AUTH_STORAGE_KEY]);
+  try {
+    const hostname = new URL(supabaseUrl).hostname;
+    if (hostname.endsWith('.supabase.co')) {
+      const projectRef = hostname.slice(0, -'.supabase.co'.length);
+      if (projectRef) keys.add(`sb-${projectRef}-auth-token`);
+    }
+  } catch {
+    // A malformed URL will fail client initialization below; auth migration is best-effort.
+  }
+  return [...keys];
+}
+
+function createPersistentAuthStorage(supabaseUrl: string) {
+  const storage = window.localStorage;
+  const legacyKeys = legacyAuthStorageKeys(supabaseUrl);
+
+  return {
+    getItem(key: string): string | null {
+      const current = storage.getItem(key);
+      if (current != null || key !== BIXBO_AUTH_STORAGE_KEY) return current;
+
+      for (const legacyKey of legacyKeys) {
+        const legacyValue = storage.getItem(legacyKey);
+        if (legacyValue == null) continue;
+        // Migrate in-place without deleting the old key so an in-flight older
+        // app tab can keep using the same authenticated session safely.
+        storage.setItem(BIXBO_AUTH_STORAGE_KEY, legacyValue);
+        return legacyValue;
+      }
+      return null;
+    },
+    setItem(key: string, value: string): void {
+      storage.setItem(key, value);
+      if (key !== BIXBO_AUTH_STORAGE_KEY) return;
+      // Mirror while old deployments are still open. This prevents a deployment
+      // boundary or PWA hand-off from making a valid session appear signed out.
+      for (const legacyKey of legacyKeys) storage.setItem(legacyKey, value);
+    },
+    removeItem(key: string): void {
+      storage.removeItem(key);
+      if (key !== BIXBO_AUTH_STORAGE_KEY) return;
+      // A real sign-out must clear both the stable and legacy session keys.
+      for (const legacyKey of legacyKeys) storage.removeItem(legacyKey);
+    },
+  };
+}
+
 function requestUrl(input: RequestInfo | URL): URL | null {
   try {
     const raw = typeof input === 'string'
@@ -153,7 +205,8 @@ function createSupabaseClient() {
       fetch: createSupabaseFetch(SUPABASE_PUBLISHABLE_KEY),
     },
     auth: {
-      storage: typeof window !== 'undefined' ? localStorage : undefined,
+      storageKey: BIXBO_AUTH_STORAGE_KEY,
+      storage: typeof window !== 'undefined' ? createPersistentAuthStorage(SUPABASE_URL) : undefined,
       persistSession: true,
       autoRefreshToken: true,
       detectSessionInUrl: true,

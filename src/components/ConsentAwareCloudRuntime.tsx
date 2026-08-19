@@ -13,6 +13,7 @@ import {
   useNetworkEfficientCloudSync,
   useNetworkEfficientNotificationRuntime,
 } from "@/lib/networkEfficientCloudRuntime";
+import { usePartnerRealtimeRefresh } from "@/lib/partnerRealtimeRuntime";
 import {
   ensurePushWorker,
   permissionState,
@@ -64,6 +65,7 @@ function LocalOnlyNotificationRuntime() {
 
 function ActiveCloudHealthRuntime() {
   useNetworkEfficientCloudSync();
+  usePartnerRealtimeRefresh();
   useNetworkEfficientNotificationRuntime();
   return null;
 }
