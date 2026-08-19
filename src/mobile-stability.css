@@ -197,3 +197,11 @@ html[data-bixbo-log-form-open] [data-bixbo-bottom-nav] {
     -webkit-overflow-scrolling: touch;
   }
 }
+
+/* Recipe cards intentionally use the same handwritten face shown in the
+   recipe-name field while editing. Override the global rounded typography
+   across the complete physical paper card, including editable controls. */
+#main-content [class*="bg-[#FBF7EC]"][class*="border-[#D4CCB8]"],
+#main-content [class*="bg-[#FBF7EC]"][class*="border-[#D4CCB8]"] * {
+  font-family: "Snell Roundhand", "Segoe Script", "Bradley Hand", cursive !important;
+}
