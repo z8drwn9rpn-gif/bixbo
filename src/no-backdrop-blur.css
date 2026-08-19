@@ -9,6 +9,27 @@ body[data-bixbo-app-root] *::after {
   backdrop-filter: none !important;
 }
 
+/* Home wordmark sharpness.
+   The remaining visible "blur" is not a backdrop blur: Home gives the BIXBO
+   span its own multi-layer display text shadow. Remove that effect directly on
+   the Home title and force WebKit to paint the glyphs as normal text rather
+   than a filtered/transformed compositor layer. Calendar/month display titles
+   keep their existing 3D styling. */
+header[data-bixbo-app-header][data-bixbo-home-header="true"] h1[data-bixbo-app-title],
+header[data-bixbo-app-header][data-bixbo-home-header="true"] h1[data-bixbo-app-title] [data-bixbo-display-title] {
+  -webkit-text-stroke: 0 !important;
+  text-shadow: none !important;
+  -webkit-filter: none !important;
+  filter: none !important;
+  -webkit-transform: none !important;
+  transform: none !important;
+  perspective: none !important;
+  will-change: auto !important;
+  opacity: 1 !important;
+  -webkit-font-smoothing: antialiased !important;
+  text-rendering: geometricPrecision;
+}
+
 /* Full-screen log titles should remain optically crisp even if a browser
    inherits display-title effects from surrounding surfaces. */
 [data-bixbo-fullscreen-log="true"] h2 {
