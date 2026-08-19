@@ -17,7 +17,7 @@ function affectedEyeLabel(affected: EyesEpisode["affected"]): string {
   return "Both eyes";
 }
 
-function painIntensityLabel(intensity: EyesPainIntensity | undefined): string {
+function painIntensityLabel(intensity: EyesPainIntensity): string {
   if (intensity === "severe") return "Severe pain";
   if (intensity === "something") return "Feeling something there";
   return "No pain";
@@ -48,11 +48,13 @@ export function DayOverviewEyesCard({
                     {entry.time} · {t(affectedEyeLabel(entry.affected))}
                   </p>
                   <div className="my-2 border-t border-border/60" />
-                  <p className="text-xs leading-relaxed text-muted-foreground">
-                    <span className="font-semibold text-foreground">{t("Pain intensity")}:</span>{" "}
-                    {t(painIntensityLabel(entry.painIntensity))}
-                  </p>
-                  <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
+                  {entry.painIntensity ? (
+                    <p className="text-xs leading-relaxed text-muted-foreground">
+                      <span className="font-semibold text-foreground">{t("Pain intensity")}:</span>{" "}
+                      {t(painIntensityLabel(entry.painIntensity))}
+                    </p>
+                  ) : null}
+                  <p className={`${entry.painIntensity ? "mt-2 " : ""}text-xs leading-relaxed text-muted-foreground`}>
                     <span className="font-semibold text-foreground">{t("Pain with eye movement")}:</span>{" "}
                     {t(entry.painWithMovement ? "Yes" : "No")}
                   </p>
