@@ -11,7 +11,7 @@ export interface EyesEpisode {
   id: string;
   time: string;
   affected: "left" | "right" | "both";
-  painIntensity: EyesPainIntensity;
+  painIntensity?: EyesPainIntensity;
   painWithMovement: boolean;
   visionChanges: string[];
   note?: string;
