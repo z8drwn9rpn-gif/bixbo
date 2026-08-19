@@ -1,6 +1,10 @@
 name: BIXBO one-time log date/action spacing repair
 
 on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/fix-log-date-savebar-gap-once.yml"
   issues:
     types: [edited]
 
@@ -10,7 +14,7 @@ permissions:
 
 jobs:
   patch:
-    if: github.event.issue.number == 229
+    if: github.event_name == 'push' || github.event.issue.number == 229
     runs-on: ubuntu-latest
     timeout-minutes: 12
     steps:
