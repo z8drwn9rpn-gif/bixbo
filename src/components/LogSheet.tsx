@@ -82,7 +82,8 @@ export function LogSheet(props: LogSheetProps) {
   const dateControl = showDateControl && dialogHost ? createPortal(
     <div
       data-bixbo-log-date-control
-      className="fixed left-0 right-0 top-[calc(env(safe-area-inset-top)+56px)] z-[260] flex h-9 items-center justify-center border-b border-border/60 bg-background/98"
+      className="fixed left-0 right-0 top-[calc(env(safe-area-inset-top)+56px)] z-[260] flex h-9 items-center justify-center border-b border-border/60 bg-background"
+      style={{ backdropFilter: "none", WebkitBackdropFilter: "none" }}
       onPointerDown={(event) => event.stopPropagation()}
       onClick={(event) => event.stopPropagation()}
     >
