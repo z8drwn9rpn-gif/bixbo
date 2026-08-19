@@ -23,21 +23,34 @@ describe("notification deep links", () => {
     expect(worker).toContain("const url = notificationUrl(data)");
   });
 
-  it("opens calendar event notifications in the matching event editor", () => {
+  it("opens event notifications in the existing Calendar events list, not the event editor", () => {
     const worker = readFileSync("public/bixbo-push-sw.js", "utf8");
-    const home = readFileSync("src/features/home/HomePage.tsx", "utf8");
+    const bridge = readFileSync("src/components/MedicationNotificationActionBridge.tsx", "utf8");
 
     expect(worker).toContain('tag.startsWith("event-event:")');
-    expect(worker).toContain('return `/?event=${encodeURIComponent(eventId)}`');
-    expect(home).toContain('currentUrl.searchParams.get("event")');
-    expect(home).toContain('(view.events ?? []).find((entry) => String(entry.id) === eventId)');
-    expect(home).toContain('setQuickCat("event")');
-    expect(home).toContain('setEditEntry(calendarEvent)');
-    expect(home).toContain('currentUrl.searchParams.delete("event")');
+    expect(worker).toContain('return `/?calendarEvents=${encodeURIComponent(eventId)}`');
+    expect(worker).not.toContain('return `/?event=${encodeURIComponent(eventId)}`');
+    expect(bridge).toContain('current.searchParams.get("calendarEvents")');
+    expect(bridge).toContain('(getBixbo().events ?? []).find((entry) => String(entry.id) === eventId)');
+    expect(bridge).toContain('document.querySelector<HTMLButtonElement>(".bixbo-calendar > div:first-child > button")');
+    expect(bridge).toContain("eventsButton.click()");
+    expect(bridge).toContain('removeSearchParam("calendarEvents")');
   });
 
-  it("routes legacy remote medication notifications to Meds instead of Home", () => {
+  it("routes medication notification taps to the daily Meds log, never Manage medications", () => {
     const worker = readFileSync("public/bixbo-push-sw.js", "utf8");
-    expect(worker).toContain('if (category === "meds" && explicit === "/") return "/meds"');
+    const bridge = readFileSync("src/components/MedicationNotificationActionBridge.tsx", "utf8");
+
+    expect(worker).toContain('if (category === "meds" && (explicit === "/" || explicit === "/meds")) return "/?log=meds"');
+    expect(bridge).toContain('current.searchParams.get("log") !== "meds"');
+    expect(bridge).toContain('button[data-log-category="meds"]');
+    expect(bridge).toContain('window.dispatchEvent(new CustomEvent("bixbo:toggle-log"))');
+    expect(bridge).toContain('removeSearchParam("log")');
+    expect(worker).not.toContain('if (category === "meds" && explicit === "/") return "/meds"');
+  });
+
+  it("bumps the service worker so installed PWAs receive the corrected tap behavior", () => {
+    const worker = readFileSync("public/bixbo-push-sw.js", "utf8");
+    expect(worker).toContain('const BIXBO_PUSH_SW_VERSION = "2026.08.19.1"');
   });
 });

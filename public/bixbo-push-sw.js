@@ -2,7 +2,7 @@
    Push + notification handling only. It intentionally has NO fetch handler and
    caches nothing, so it cannot serve stale HTML or interfere with app updates. */
 
-const BIXBO_PUSH_SW_VERSION = "2026.08.18.2";
+const BIXBO_PUSH_SW_VERSION = "2026.08.19.1";
 const MED_ACTION_DB = "bixbo-notification-actions";
 const MED_ACTION_STORE = "pending-med-actions";
 
@@ -31,9 +31,11 @@ function notificationUrl(data) {
   const category = typeof data?.category === "string" ? data.category : "";
   const tag = typeof data?.tag === "string" ? data.tag : "";
 
-  // Calendar-event payloads historically used `/` because the editor lives on
-  // Home rather than a standalone route. Recover the event id from the stable
-  // notification tag and hand Home a one-shot deep link that opens that editor.
+  // Calendar-event payloads historically used `/` because the calendar lives
+  // on Home rather than a standalone route. Recover the event id from the
+  // stable notification tag and hand Home a one-shot deep link that opens the
+  // existing Calendar events list. Tapping the notification must not jump
+  // straight into the event editor.
   if (category === "appointments" && tag.startsWith("event-event:")) {
     let eventId = tag.slice("event-event:".length);
     for (const suffix of ["-day-before", "-tomorrow", "-start"]) {
@@ -42,12 +44,13 @@ function notificationUrl(data) {
         break;
       }
     }
-    if (eventId) return `/?event=${encodeURIComponent(eventId)}`;
+    if (eventId) return `/?calendarEvents=${encodeURIComponent(eventId)}`;
   }
 
-  // Remote medication pushes predate the dedicated Meds route and still carry
-  // `/`; keep local and remote tap behavior consistent.
-  if (category === "meds" && explicit === "/") return "/meds";
+  // Medication reminders must open the daily Meds log where the scheduled
+  // doses can be checked off. Normalize both current `/meds` local payloads and
+  // older remote `/` payloads so neither opens Manage medications.
+  if (category === "meds" && (explicit === "/" || explicit === "/meds")) return "/?log=meds";
 
   return explicit;
 }
