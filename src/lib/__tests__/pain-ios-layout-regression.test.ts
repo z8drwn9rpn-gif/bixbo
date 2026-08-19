@@ -8,7 +8,7 @@ const painWizard = fs.readFileSync("src/features/logging/PainWizard.tsx", "utf8"
 
 describe("Pain mobile/iOS layout stability", () => {
   it("keeps the standard Pain action bar sticky directly in source", () => {
-    expect(painWizard).toContain('className="sticky top-0 z-30 -mx-5 h-[60px]');
+    expect(painWizard).toContain('style={{ top: "var(--bixbo-log-date-offset, 0px)" }} className="sticky z-30 -mx-5 h-[60px]');
     expect(painWizard).not.toContain('className="fixed inset-x-0 z-30 h-[60px]');
     expect(iosCss).not.toContain('> div > div.fixed.inset-x-0');
   });
@@ -21,7 +21,7 @@ describe("Pain mobile/iOS layout stability", () => {
   it("keeps quick Add symptoms action in flow without a duplicate top spacer", () => {
     expect(painWizard).toContain('px-1 pb-3 pt-3');
     expect(painWizard).not.toContain('pt-[68px]');
-    expect(painWizard).toContain('<SheetFooter className="sticky top-0 order-first');
+    expect(painWizard).toContain('<SheetFooter style={{ top: "var(--bixbo-log-date-offset, 0px)" }} className="sticky order-first');
     expect(painWizard).not.toContain('style={{ top: "calc(env(safe-area-inset-top) + 56px)" }}');
   });
 

@@ -7,7 +7,7 @@ describe("UI layout architecture regressions", () => {
     const css = readFileSync("src/mobile-stability.css", "utf8");
     expect(pain).not.toContain('pt-[68px]');
     expect(pain).not.toContain('style={{ top: "calc(env(safe-area-inset-top) + 56px)" }}');
-    expect(pain).toContain('className="sticky top-0');
+    expect(pain).toContain('style={{ top: "var(--bixbo-log-date-offset, 0px)" }} className="sticky');
     expect(css).not.toContain('> div > div.fixed.inset-x-0');
     expect(css).not.toContain(':has(> div.fixed.mt-6)');
   });
@@ -23,7 +23,12 @@ describe("UI layout architecture regressions", () => {
 
   it("keeps shared log Save action touch-friendly", () => {
     const source = readFileSync("src/features/logging/LogFormPrimitives.tsx", "utf8");
+    const shell = readFileSync("src/components/LogSheet.tsx", "utf8");
     expect(source).toContain('h-10 min-w-[104px]');
+    expect(source).toContain('data-bixbo-log-save-bar');
+    expect(source).toContain('var(--bixbo-log-date-offset, 0px)');
+    expect(shell).not.toContain('formSurface.style.paddingTop = showDateControl ? "36px" : ""');
+    expect(shell).toContain('formSurface.style.setProperty("--bixbo-log-date-offset", "36px")');
   });
 
   it("keeps visual polish on stable component hooks instead of DOM-order patches", () => {

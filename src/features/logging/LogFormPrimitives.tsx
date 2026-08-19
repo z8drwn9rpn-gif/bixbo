@@ -178,7 +178,11 @@ export function Chip({
 export function SaveBar({ onCancel, onSave, disabled }: { onCancel: () => void; onSave: () => void; disabled?: boolean }) {
   const { t } = useI18n();
   return (
-    <SheetFooter className="sticky top-0 z-30 -mx-5 mt-0 flex-row items-center justify-between gap-3 border-b border-border/50 bg-background/95 px-5 py-2 shadow-sm backdrop-blur">
+    <SheetFooter
+      data-bixbo-log-save-bar
+      style={{ top: "var(--bixbo-log-date-offset, 0px)" }}
+      className="sticky z-30 -mx-5 mt-0 flex-row items-center justify-between gap-3 border-b border-border/50 bg-background/95 px-5 py-2 shadow-sm backdrop-blur"
+    >
       <button
         type="button"
         onClick={onCancel}

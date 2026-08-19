@@ -52,9 +52,16 @@ export function LogSheet(props: LogSheetProps) {
 
   useEffect(() => {
     if (!formSurface) return;
-    formSurface.style.paddingTop = showDateControl ? "36px" : "";
+    if (showDateControl) {
+      formSurface.style.setProperty("--bixbo-log-date-offset", "36px");
+      formSurface.style.scrollPaddingTop = "36px";
+    } else {
+      formSurface.style.removeProperty("--bixbo-log-date-offset");
+      formSurface.style.scrollPaddingTop = "";
+    }
     return () => {
-      formSurface.style.paddingTop = "";
+      formSurface.style.removeProperty("--bixbo-log-date-offset");
+      formSurface.style.scrollPaddingTop = "";
     };
   }, [formSurface, showDateControl]);
 

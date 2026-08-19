@@ -386,7 +386,7 @@ export function PainWizard({
         </div>
       ) : (
         <div
-          className="sticky top-0 z-30 -mx-5 h-[60px] flex items-center justify-between gap-2 border-b border-border/50 bg-background/95 px-5 py-2 shadow-sm backdrop-blur"
+          style={{ top: "var(--bixbo-log-date-offset, 0px)" }} className="sticky z-30 -mx-5 h-[60px] flex items-center justify-between gap-2 border-b border-border/50 bg-background/95 px-5 py-2 shadow-sm backdrop-blur"
         >
           {safeStep > 0 ? (
             <button
@@ -1053,7 +1053,7 @@ export function PainWizard({
       )}
 
       {quickSymptomUpdate && (activePainStepId === "symptoms" || activePainStepId === "episodes") && (
-        <SheetFooter className="sticky top-0 order-first z-30 -mx-5 mt-0 h-[60px] flex-row items-center justify-between gap-3 border-b border-border/50 bg-background/95 px-5 py-2 shadow-sm backdrop-blur">
+        <SheetFooter style={{ top: "var(--bixbo-log-date-offset, 0px)" }} className="sticky order-first z-30 -mx-5 mt-0 h-[60px] flex-row items-center justify-between gap-3 border-b border-border/50 bg-background/95 px-5 py-2 shadow-sm backdrop-blur">
           <button
             type="button"
             onClick={() => {

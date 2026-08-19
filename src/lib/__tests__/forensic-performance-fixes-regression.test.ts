@@ -64,7 +64,8 @@ describe("forensic performance fixes", () => {
     const logSheet = read("src/components/LogSheet.tsx");
 
     expect(logSheet).toContain("createPortal(");
-    expect(logSheet).toContain("formSurface.style.paddingTop");
+    expect(logSheet).toContain('formSurface.style.setProperty("--bixbo-log-date-offset", "36px")');
+    expect(logSheet).not.toContain("formSurface.style.paddingTop");
     expect(logSheet).toContain("const dateLabel = useMemo");
     expect(logSheet).toContain("<LogSheetRoot key={formKey} {...props} date={targetDate} />");
     expect(logSheet).not.toContain('if (props.initial === "temp")');
