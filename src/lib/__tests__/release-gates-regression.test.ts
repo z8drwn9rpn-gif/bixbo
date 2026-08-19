@@ -61,6 +61,17 @@ describe("10/10 release gates", () => {
     expect(ci).toContain("WEBKIT_OUTCOME");
   });
 
+  it("makes the quality result externally inspectable for every main/manual run", () => {
+    const ci = read(".github/workflows/ci.yml");
+
+    expect(ci).toContain("workflow_dispatch:");
+    expect(ci).toContain("issues: write");
+    expect(ci).toContain("Record quality gate status");
+    expect(ci).toContain("issues/241");
+    expect(ci).toContain("**Commit:** \\`${GITHUB_SHA}\\`");
+    expect(ci).toContain("Browser release gate");
+  });
+
   it("checks live PWA infrastructure after production deploy", () => {
     const smoke = read(".github/workflows/production-smoke.yml");
 

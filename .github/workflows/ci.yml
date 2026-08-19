@@ -4,9 +4,11 @@ on:
   push:
     branches: [main]
   pull_request:
+  workflow_dispatch:
 
 permissions:
   contents: read
+  issues: write
 
 concurrency:
   group: bixbo-checks-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
@@ -22,6 +24,7 @@ jobs:
         with:
           bun-version: latest
       - name: Repository security hygiene
+        id: security
         shell: bash
         run: |
           set -euo pipefail
@@ -38,28 +41,40 @@ jobs:
             exit 1
           fi
       - name: Install dependencies
+        id: install
         run: bun install --frozen-lockfile
       - name: Architecture guard
+        id: architecture
         run: bun run architecture
       - name: Lovable independence guard
+        id: independence
         run: bun run audit:independence
       - name: English-source UI guard
+        id: i18n
         run: bun run audit:i18n
       - name: Full-project UI emoji audit
+        id: emoji
         run: bun run audit:ui-emoji
       - name: Typecheck
+        id: typecheck
         run: bun run typecheck
       - name: Lint
+        id: lint
         run: bun run lint
       - name: Unit and regression tests
+        id: tests
         run: bun run test
       - name: Build
+        id: build
         run: bun run build
       - name: Client bundle budget
+        id: bundle
         run: bun run bundle:check
       - name: Smoke built app
+        id: ssr_smoke
         run: timeout 75s bun run smoke:ssr
       - name: Install Chromium and WebKit
+        id: browsers
         run: bunx playwright install --with-deps chromium webkit
 
       # Keep each browser isolated behind a fresh Wrangler process, but do not
@@ -108,6 +123,7 @@ jobs:
           retention-days: 7
 
       - name: Enforce browser release gate
+        id: browser_gate
         if: always()
         shell: bash
         env:
@@ -123,3 +139,57 @@ jobs:
             echo "One or more browser release gates failed. Review the uploaded screenshot/trace evidence."
             exit 1
           fi
+
+      - name: Record quality gate status
+        if: always() && github.event_name != 'pull_request'
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ github.token }}
+          JOB_STATUS: ${{ job.status }}
+          SECURITY_OUTCOME: ${{ steps.security.outcome }}
+          INSTALL_OUTCOME: ${{ steps.install.outcome }}
+          ARCHITECTURE_OUTCOME: ${{ steps.architecture.outcome }}
+          INDEPENDENCE_OUTCOME: ${{ steps.independence.outcome }}
+          I18N_OUTCOME: ${{ steps.i18n.outcome }}
+          EMOJI_OUTCOME: ${{ steps.emoji.outcome }}
+          TYPECHECK_OUTCOME: ${{ steps.typecheck.outcome }}
+          LINT_OUTCOME: ${{ steps.lint.outcome }}
+          TESTS_OUTCOME: ${{ steps.tests.outcome }}
+          BUILD_OUTCOME: ${{ steps.build.outcome }}
+          BUNDLE_OUTCOME: ${{ steps.bundle.outcome }}
+          SSR_OUTCOME: ${{ steps.ssr_smoke.outcome }}
+          DESKTOP_OUTCOME: ${{ steps.e2e_desktop.outcome }}
+          MOBILE_OUTCOME: ${{ steps.e2e_mobile.outcome }}
+          WEBKIT_OUTCOME: ${{ steps.e2e_webkit.outcome }}
+          BROWSER_GATE_OUTCOME: ${{ steps.browser_gate.outcome }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          cat > /tmp/bixbo-quality-status.md <<EOF
+          Automated BIXBO quality gate status.
+
+          **Commit:** \`${GITHUB_SHA}\`
+          **Job:** ${JOB_STATUS}
+          **Run:** https://github.com/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}
+
+          | Gate | Outcome |
+          |---|---|
+          | Security hygiene | ${SECURITY_OUTCOME:-not-run} |
+          | Install | ${INSTALL_OUTCOME:-not-run} |
+          | Architecture | ${ARCHITECTURE_OUTCOME:-not-run} |
+          | Independence | ${INDEPENDENCE_OUTCOME:-not-run} |
+          | i18n | ${I18N_OUTCOME:-not-run} |
+          | UI emoji audit | ${EMOJI_OUTCOME:-not-run} |
+          | Typecheck | ${TYPECHECK_OUTCOME:-not-run} |
+          | Lint | ${LINT_OUTCOME:-not-run} |
+          | Unit/regression | ${TESTS_OUTCOME:-not-run} |
+          | Build | ${BUILD_OUTCOME:-not-run} |
+          | Bundle budget | ${BUNDLE_OUTCOME:-not-run} |
+          | SSR smoke | ${SSR_OUTCOME:-not-run} |
+          | Chromium desktop | ${DESKTOP_OUTCOME:-not-run} |
+          | Chromium mobile | ${MOBILE_OUTCOME:-not-run} |
+          | WebKit mobile | ${WEBKIT_OUTCOME:-not-run} |
+          | Browser release gate | ${BROWSER_GATE_OUTCOME:-not-run} |
+          EOF
+
+          gh api --method PATCH "repos/${GITHUB_REPOSITORY}/issues/241" --raw-field body="$(cat /tmp/bixbo-quality-status.md)" >/dev/null
