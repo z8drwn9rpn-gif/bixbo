@@ -1,0 +1,54 @@
+name: Apply Recipes Eyes PWA fix
+
+on:
+  push:
+    branches: [fix/recipes-eyes-pwa-freshness]
+
+permissions:
+  contents: write
+
+jobs:
+  apply-and-validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7.0.1
+        with:
+          ref: fix/recipes-eyes-pwa-freshness
+          fetch-depth: 0
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+      - name: Apply patch
+        run: python3 scripts/apply-recipes-eyes-pwa-fix.py
+      - name: Install
+        run: bun install --frozen-lockfile
+      - name: Architecture
+        run: bun run architecture
+      - name: Independence
+        run: bun run audit:independence
+      - name: i18n
+        run: bun run audit:i18n
+      - name: UI emoji audit
+        run: bun run audit:ui-emoji
+      - name: Typecheck
+        run: bun run typecheck
+      - name: Lint
+        run: bun run lint
+      - name: Unit tests
+        run: bun run test
+      - name: Build
+        run: bun run build
+      - name: Bundle budget
+        run: bun run bundle:check
+      - name: SSR smoke
+        run: timeout 75s bun run smoke:ssr
+      - name: Commit validated patch
+        run: |
+          set -euo pipefail
+          git config user.name "BIXBO automation"
+          git config user.email "actions@users.noreply.github.com"
+          git rm .github/workflows/apply-recipes-eyes-pwa-fix.yml scripts/apply-recipes-eyes-pwa-fix.py
+          git add src/features/notes/RecipesView.tsx src/features/logging/EyesForm.tsx src/routes/__root.tsx public/bixbo-push-sw.js .github/workflows/deploy-cloudflare.yml src/lib/__tests__/pwa-lifecycle-reload-regression.test.ts src/lib/__tests__/eyes-recipes-reference-regression.test.ts
+          git commit -m "Fix Recipes reference UI and PWA freshness"
+          git push origin HEAD:fix/recipes-eyes-pwa-freshness
