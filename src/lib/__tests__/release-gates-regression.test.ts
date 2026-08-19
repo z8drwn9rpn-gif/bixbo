@@ -72,6 +72,17 @@ describe("10/10 release gates", () => {
     expect(ci).toContain("Browser release gate");
   });
 
+  it("only deploys automatically after the full BIXBO quality workflow succeeds", () => {
+    const deploy = read(".github/workflows/deploy-cloudflare.yml");
+
+    expect(deploy).toContain("workflow_run:");
+    expect(deploy).toContain('workflows: ["BIXBO checks"]');
+    expect(deploy).toContain("github.event.workflow_run.conclusion == 'success'");
+    expect(deploy).toContain("github.event.workflow_run.head_branch == 'main'");
+    expect(deploy).toContain("github.event.workflow_run.head_sha");
+    expect(deploy).not.toContain("  push:\n    branches: [main]");
+  });
+
   it("makes deployment success prove the live PWA contract and publish its exact SHA", () => {
     const deploy = read(".github/workflows/deploy-cloudflare.yml");
 

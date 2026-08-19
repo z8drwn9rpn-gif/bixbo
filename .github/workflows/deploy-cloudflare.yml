@@ -1,8 +1,9 @@
 name: BIXBO Cloudflare production deploy
 
 on:
-  push:
-    branches: [main]
+  workflow_run:
+    workflows: ["BIXBO checks"]
+    types: [completed]
   issues:
     types: [reopened]
   workflow_dispatch:
@@ -22,11 +23,11 @@ concurrency:
 
 jobs:
   deploy:
-    if: github.ref == 'refs/heads/main' && (github.event_name != 'issues' || github.event.issue.number == 229)
+    if: (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.head_branch == 'main') || (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main') || (github.event_name == 'issues' && github.event.issue.number == 229)
     runs-on: ubuntu-latest
     timeout-minutes: 30
     env:
-      DEPLOY_SHA: ${{ github.sha }}
+      DEPLOY_SHA: ${{ github.event_name == 'workflow_run' && github.event.workflow_run.head_sha || github.sha }}
       CONFIRM_PRODUCTION: ${{ inputs.confirm_production }}
       CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
       CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
