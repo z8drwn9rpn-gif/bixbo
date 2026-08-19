@@ -2,12 +2,13 @@ import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
 const css = readFileSync("src/ios-pwa-rendering-fixes.css", "utf8");
-const appShell = readFileSync("src/app-shell.css", "utf8");
+const appShellCss = readFileSync("src/app-shell.css", "utf8");
+const appShell = readFileSync("src/components/AppShell.tsx", "utf8");
 const home = readFileSync("src/features/home/HomePage.tsx", "utf8");
 
 describe("iPhone standalone PWA header rendering", () => {
   it("loads a WebKit standalone-only Home header correction", () => {
-    expect(appShell).toContain('@import "./ios-pwa-rendering-fixes.css";');
+    expect(appShellCss).toContain('@import "./ios-pwa-rendering-fixes.css";');
     expect(css).toContain("@supports (-webkit-touch-callout: none)");
     expect(css).toContain("@media (display-mode: standalone)");
     expect(css).toContain('header[data-bixbo-app-header][data-bixbo-home-header="true"]');
@@ -21,11 +22,17 @@ describe("iPhone standalone PWA header rendering", () => {
     expect(css).toContain("contain: none !important");
     expect(css).toContain("overflow: visible !important");
     expect(css).toContain("text-shadow: none !important");
+    expect(css).toContain("box-shadow: none !important");
     expect(css).toContain("-webkit-font-smoothing: auto !important");
-    expect(css).toContain("text-rendering: geometricPrecision");
+    expect(css).toContain("text-rendering: auto !important");
+    expect(css).not.toContain("text-rendering: geometricPrecision");
   });
 
-  it("does not paint a shadow directly on the BIXBO wordmark", () => {
+  it("renders the Home title in a single flat host with no neighbouring soft shadow", () => {
+    expect(appShell).toContain('isHomeHeader ? (');
+    expect(appShell).toContain('<div data-bixbo-app-title className="min-w-0"');
+    expect(appShell).toContain('style={{ filter: isHomeHeader ? "none" : BIXBO_MASCOT_FILTER }}');
+    expect(appShell).not.toContain("portrait:shadow-[0_0_40px_-24px");
     expect(home).toContain('textShadow: "none", filter: "none" }}>BIXBO</span>');
     expect(home).not.toContain('textShadow: roundedDisplayShadow }}>BIXBO</span>');
   });
