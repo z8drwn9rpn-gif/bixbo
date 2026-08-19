@@ -49,9 +49,10 @@ describe("iPhone standalone PWA Home rendering", () => {
     expect(css).not.toContain("-webkit-mask-image:");
   });
 
-  it("keeps Home content below the iOS status bar instead of under translucent system chrome", () => {
+  it("keeps Home content below iOS system chrome and Dynamic Island live-activity material", () => {
     expect(root).toContain('{ name: "apple-mobile-web-app-status-bar-style", content: "default" }');
     expect(root).not.toContain('content: "black-translucent"');
     expect(root).toContain('[data-bixbo-home-paint-island]');
+    expect(css).toContain("padding-top: calc(max(0.5rem, env(safe-area-inset-top)) + 2.75rem) !important");
   });
 });
