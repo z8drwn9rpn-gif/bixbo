@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 
 const css = readFileSync("src/ios-pwa-rendering-fixes.css", "utf8");
 const appShell = readFileSync("src/app-shell.css", "utf8");
+const home = readFileSync("src/features/home/HomePage.tsx", "utf8");
 
 describe("iPhone standalone PWA header rendering", () => {
   it("loads a WebKit standalone-only Home header correction", () => {
@@ -20,6 +21,12 @@ describe("iPhone standalone PWA header rendering", () => {
     expect(css).toContain("contain: none !important");
     expect(css).toContain("overflow: visible !important");
     expect(css).toContain("text-shadow: none !important");
-    expect(css).toContain("-webkit-font-smoothing: antialiased !important");
+    expect(css).toContain("-webkit-font-smoothing: auto !important");
+    expect(css).toContain("text-rendering: geometricPrecision");
+  });
+
+  it("does not paint a shadow directly on the BIXBO wordmark", () => {
+    expect(home).toContain('textShadow: "none", filter: "none" }}>BIXBO</span>');
+    expect(home).not.toContain('textShadow: roundedDisplayShadow }}>BIXBO</span>');
   });
 });
