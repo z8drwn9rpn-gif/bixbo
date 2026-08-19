@@ -3,7 +3,7 @@ import { ChevronLeft, X } from "@/components/icons/BixboExtraIcons";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { useI18n } from "@/hooks/useI18n";
 import { updateDayLog, type BixboData, type DayLog } from "@/lib/storage";
-import { EyesForm, type EyesEpisode } from "@/features/logging/EyesForm";
+import { EyesForm, type EyesEpisode, type EyesPainIntensity } from "@/features/logging/EyesForm";
 import {
   DayOverviewCard as Card,
   DayOverviewDeleteButton as DeleteBtn,
@@ -15,6 +15,12 @@ function affectedEyeLabel(affected: EyesEpisode["affected"]): string {
   if (affected === "left") return "Left eye";
   if (affected === "right") return "Right eye";
   return "Both eyes";
+}
+
+function painIntensityLabel(intensity: EyesPainIntensity | undefined): string {
+  if (intensity === "severe") return "Severe pain";
+  if (intensity === "something") return "Feeling something there";
+  return "No pain";
 }
 
 export function DayOverviewEyesCard({
@@ -43,6 +49,10 @@ export function DayOverviewEyesCard({
                   </p>
                   <div className="my-2 border-t border-border/60" />
                   <p className="text-xs leading-relaxed text-muted-foreground">
+                    <span className="font-semibold text-foreground">{t("Pain intensity")}:</span>{" "}
+                    {t(painIntensityLabel(entry.painIntensity))}
+                  </p>
+                  <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
                     <span className="font-semibold text-foreground">{t("Pain with eye movement")}:</span>{" "}
                     {t(entry.painWithMovement ? "Yes" : "No")}
                   </p>
