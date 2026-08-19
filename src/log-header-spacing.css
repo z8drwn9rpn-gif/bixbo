@@ -1,5 +1,4 @@
-/* Keep every detailed log flush under the global date control. The log form itself may keep bottom padding, but no form-root top padding/margin may create a blank strip before its sticky action bar. */
-[data-bixbo-log-surface] > :first-child {
-  padding-top: 0 !important;
-  margin-top: 0 !important;
+/* Full-screen log sheets inherit SheetHeader's default mb-2 (8px). The shared date row is positioned directly below the 56px header, so that inherited margin creates a visible gap across every detailed log. Cancel the gap at the shared scroll surface instead of changing individual form spacing. */
+[data-bixbo-fullscreen-log="true"] [data-bixbo-log-surface] {
+  margin-top: -0.5rem !important;
 }
