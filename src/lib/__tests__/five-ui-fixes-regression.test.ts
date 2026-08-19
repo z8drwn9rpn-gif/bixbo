@@ -1,62 +1,53 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
-const root = readFileSync("src/routes/__root.tsx", "utf8");
-const deviceCss = readFileSync("src/device-rendering-fixes.css", "utf8");
 const painLayoutCss = readFileSync("src/pain-log-layout-fixes.css", "utf8");
 const appShellCss = readFileSync("src/app-shell.css", "utf8");
 const summary = readFileSync("src/components/home/HomeSummaryOverlay.tsx", "utf8");
-const logSheet = readFileSync("src/components/LogSheet.tsx", "utf8");
 const primitives = readFileSync("src/features/logging/LogFormPrimitives.tsx", "utf8");
 const cycle = readFileSync("src/features/logging/CycleForms.tsx", "utf8");
 const registry = readFileSync("src/lib/appRegistry.ts", "utf8");
 const slovak = readFileSync("src/lib/i18n/sk-6.ts", "utf8");
 
-describe("iPhone standalone Month Summary rendering", () => {
-  it("keeps the normal dim + backdrop blur styling for normal browsers", () => {
+describe("Month Summary rendering", () => {
+  it("keeps the dim layer but removes backdrop blur at the source", () => {
     expect(summary).toContain('data-bixbo-overlay-backdrop="month-summary"');
-    expect(summary).toContain('bg-black/40 backdrop-blur-[1px]');
+    expect(summary).toContain('className="absolute inset-0 bg-black/40"');
+    expect(summary).not.toContain('bg-black/40 backdrop-blur-[1px]');
+    expect(painLayoutCss).toContain('[data-bixbo-overlay-backdrop="month-summary"]');
+    expect(painLayoutCss).toContain('-webkit-backdrop-filter: none !important;');
+    expect(painLayoutCss).toContain('backdrop-filter: none !important;');
   });
 
-  it("marks iOS standalone mode before paint and not ordinary browser mode", () => {
-    expect(root).toContain('const isIOS = /iPhone|iPad|iPod/i.test(ua)');
-    expect(root).toContain('const isStandalone = navigator.standalone === true');
-    expect(root).toContain('if (isIOS && isStandalone) root.dataset.bixboIosStandalone = "true";');
-    expect(root).toContain('else delete root.dataset.bixboIosStandalone;');
-  });
-
-  it("removes only the Month Summary backdrop filter in iOS standalone mode", () => {
-    expect(deviceCss).toContain('html[data-bixbo-ios-standalone="true"] [data-bixbo-overlay-backdrop="month-summary"]');
-    expect(deviceCss).toContain('backdrop-filter: none !important;');
-    expect(deviceCss).toContain('-webkit-backdrop-filter: none !important;');
-    expect(deviceCss).not.toContain('html [data-bixbo-overlay-backdrop="month-summary"] {');
+  it("shows readable legacy custom-entry content instead of a mystery category", () => {
+    expect(summary).toContain("function customLogEntryLabel(entry: unknown)");
+    expect(summary).toContain('typeof record.text === "string"');
+    expect(summary).toContain("customLogLabels");
+    expect(summary).toContain('label: month.customLogLabels.length === 1 ? month.customLogLabels[0] : t("Saved entries")');
+    expect(summary).not.toContain('label: t("Other saved entries")');
   });
 });
 
 describe("Pain log explanation readability and spacing", () => {
-  it("keeps the date control addressable and hides it while shared scale legends are open", () => {
-    expect(logSheet).toContain("data-bixbo-log-date-control");
-    expect(primitives).toContain("markScaleLegendOpen");
-    expect(deviceCss).toContain('html[data-bixbo-scale-legend-open="true"] [data-bixbo-log-date-control]');
-  });
-
-  it("also protects the main Pain scale explanation dialog", () => {
-    expect(painLayoutCss).toContain('html:has(.fixed.inset-0[role="presentation"] [role="dialog"][aria-modal="true"]) [data-bixbo-log-date-control]');
-  });
-
-  it("standardizes the header-to-question gap on Pain pages 2–5 only", () => {
+  it("reserves the sticky header offset on Pain pages 2–5 without changing page 1", () => {
     expect(appShellCss).toContain('@import "./pain-log-layout-fixes.css";');
     expect(painLayoutCss).toContain('[data-bixbo-log-field-id="parts"]');
     expect(painLayoutCss).toContain('[data-bixbo-log-field-id="quality"]');
     expect(painLayoutCss).toContain('[data-bixbo-log-field-id="symptoms"]');
-    expect(painLayoutCss).toContain('> div.space-y-4.pt-1');
-    expect(painLayoutCss).toContain('padding-top: 1rem !important;');
+    expect(painLayoutCss).toContain(':has(> div.space-y-4.pt-1)');
+    expect(painLayoutCss).toContain('margin-bottom: calc(var(--bixbo-log-date-offset, 0px) + 12px) !important;');
+    expect(painLayoutCss).not.toContain('padding-top: 1rem !important;');
     expect(painLayoutCss).not.toContain('data-bixbo-log-field-id="score"');
+  });
+
+  it("puts scale explanation sheets above the fixed date control", () => {
+    expect(painLayoutCss).toContain('[role="dialog"][aria-modal="true"]');
+    expect(painLayoutCss).toContain('z-index: 320 !important;');
   });
 });
 
 describe("Cramp pain explanations", () => {
-  it("uses the existing cramp field and its canonical saved pain descriptions", () => {
+  it("uses the existing cramp field and canonical pain descriptions", () => {
     expect(cycle).toContain('const [cramps, setCramps] = useState<number | undefined>(cur?.cramps);');
     expect(cycle).toContain('descriptions={getScaleDesc(data, "pain")}');
     expect(cycle).toContain('legendTitle="Cramp pain scale"');
@@ -64,18 +55,11 @@ describe("Cramp pain explanations", () => {
     expect((registry.match(/id: "cramps"/g) ?? [])).toHaveLength(1);
   });
 
-  it("shows a dedicated mobile-accessible legend for that existing scale", () => {
-    expect(primitives).toContain('const ownsCrampLegend = legendTitle === "Cramp pain scale" && Boolean(descriptions);');
+  it("keeps the functional info control and places it beside the Cramp pain heading", () => {
     expect(primitives).toContain('aria-label={t("Cramp pain scale")}');
-    expect(primitives).toContain('title="Cramp pain scale"');
+    expect(painLayoutCss).toContain('button:is([aria-label="Cramp pain scale"], [aria-label="Stupnica bolesti pri kŕčoch"])');
+    expect(painLayoutCss).toContain('grid-row: 1;');
+    expect(painLayoutCss).toContain('grid-column: 2;');
     expect(slovak).toContain('"Cramp pain scale": "Stupnica bolesti pri kŕčoch"');
-  });
-});
-
-describe("Month Summary wording", () => {
-  it("uses a clearer label without removing historical custom entries", () => {
-    expect(summary).toContain('month.customLogCount ?');
-    expect(summary).toContain('label: t("Other saved entries")');
-    expect(slovak).toContain('"Other saved entries": "Ďalšie uložené záznamy"');
   });
 });

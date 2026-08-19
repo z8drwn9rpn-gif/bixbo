@@ -1,16 +1,59 @@
-/* Pain wizard pages 2–5 use the same top gap below the sticky wizard header.
-   Existing space-y-4 continues to provide the equal gap between questions. */
-div.flex.min-h-full.flex-col.px-5.pb-4.pt-0.touch-pan-y > div.block:has([data-bixbo-log-field-id="parts"]),
-div.flex.min-h-full.flex-col.px-5.pb-4.pt-0.touch-pan-y > div.space-y-4:has([data-bixbo-log-field-id="quality"]),
-div.flex.min-h-full.flex-col.px-5.pb-4.pt-0.touch-pan-y > div.space-y-4:has([data-bixbo-log-field-id="symptoms"]),
-div.flex.min-h-full.flex-col.px-5.pb-4.pt-0.touch-pan-y > div.space-y-4.pt-1 {
-  padding-top: 1rem !important;
+/* Pain wizard pages 2–5: the sticky Back / Next bar is visually shifted down
+   by the global date-control offset. Reserve that same offset in normal flow,
+   plus a small breathing gap, so the first question never sits underneath the
+   bar. Page 1 is intentionally excluded. Existing space-y-4 keeps the same
+   vertical rhythm between subsequent questions. */
+[data-bixbo-log-surface="pain"] > div.flex.min-h-full.flex-col.px-5.pb-4.pt-0:has([data-bixbo-log-field-id="parts"]) > div.sticky,
+[data-bixbo-log-surface="pain"] > div.flex.min-h-full.flex-col.px-5.pb-4.pt-0:has([data-bixbo-log-field-id="quality"]) > div.sticky,
+[data-bixbo-log-surface="pain"] > div.flex.min-h-full.flex-col.px-5.pb-4.pt-0:has([data-bixbo-log-field-id="symptoms"]) > div.sticky,
+[data-bixbo-log-surface="pain"] > div.flex.min-h-full.flex-col.px-5.pb-4.pt-0:has(> div.space-y-4.pt-1) > div.sticky {
+  margin-bottom: calc(var(--bixbo-log-date-offset, 0px) + 12px) !important;
 }
 
-/* The main Pain scale has its own explanation dialog rather than Field's
-   shared legend state. Hide the fixed date pill for that dialog too so no
-   explanation can ever sit underneath the date control. */
-html:has(.fixed.inset-0[role="presentation"] [role="dialog"][aria-modal="true"]) [data-bixbo-log-date-control] {
-  display: none !important;
-  pointer-events: none !important;
+/* Scale explanation sheets must paint above the fixed date pill (z 260).
+   Keeping the date in place avoids layout jumps; the sheet simply owns the
+   foreground while it is open. */
+[data-bixbo-log-surface] div.fixed.inset-0[role="presentation"]:has([role="dialog"][aria-modal="true"]) {
+  z-index: 320 !important;
+}
+
+/* Blueberry Cramp pain: keep the existing functional info button, but place it
+   beside the CRAMP PAIN heading rather than in a separate row under the scale.
+   Both current UI languages are covered because aria-label is localized. */
+[data-bixbo-log-surface="standard"] section:has(> p + div button:is([aria-label="Cramp pain scale"], [aria-label="Stupnica bolesti pri kŕčoch"])) {
+  display: grid;
+  grid-template-columns: max-content max-content minmax(0, 1fr);
+  align-items: center;
+  column-gap: 6px;
+}
+
+[data-bixbo-log-surface="standard"] section:has(> p + div button:is([aria-label="Cramp pain scale"], [aria-label="Stupnica bolesti pri kŕčoch"])) > p {
+  grid-column: 1;
+  grid-row: 1;
+  margin-bottom: 0 !important;
+}
+
+[data-bixbo-log-surface="standard"] section:has(> p + div button:is([aria-label="Cramp pain scale"], [aria-label="Stupnica bolesti pri kŕčoch"])) > p + div {
+  display: contents;
+}
+
+[data-bixbo-log-surface="standard"] section:has(> p + div button:is([aria-label="Cramp pain scale"], [aria-label="Stupnica bolesti pri kŕčoch"])) > p + div > div:first-child {
+  grid-column: 1 / -1;
+  grid-row: 2;
+  margin-top: 8px;
+}
+
+[data-bixbo-log-surface="standard"] section:has(> p + div button:is([aria-label="Cramp pain scale"], [aria-label="Stupnica bolesti pri kŕčoch"])) > p + div > div.flex.justify-end {
+  grid-column: 2;
+  grid-row: 1;
+  justify-content: flex-start;
+  margin: 0;
+}
+
+/* Month Summary: remove the actual blur source completely. The dark dim layer
+   remains, but no platform (including iPhone standalone PWA) rasterizes and
+   softens the BIXBO header behind the modal. */
+[data-bixbo-overlay-backdrop="month-summary"] {
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
 }
