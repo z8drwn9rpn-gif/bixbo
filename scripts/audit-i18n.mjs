@@ -21,6 +21,10 @@ const allowed = new Set([
   "src/features/insights/TimeOfDayPatternChart.tsx",
   "src/hooks/useI18n.ts",
   "src/lib/painScale.ts",
+  // The recipe importer deliberately recognizes Slovak source-note vocabulary.
+  // User-facing labels in this module still go through useI18n(); the Slovak
+  // literals are parser tokens needed to import existing notes without edits.
+  "src/features/notes/RecipesView.tsx",
   // These modules deliberately colocate explicit EN/SK copy.
   "src/routes/auth.tsx",
   "src/routes/onboarding.tsx",
@@ -43,7 +47,7 @@ function visit(path) {
 
   const stat = statSync(path);
   if (stat.isDirectory()) {
-    for (const name of readdirSync(path)) visit(join(path, name));
+    for (const name of readdirSync(path)) visit(join(root, relative(root, path), name));
     return;
   }
   if (!/\.tsx?$/.test(path) || allowed.has(rel)) return;
