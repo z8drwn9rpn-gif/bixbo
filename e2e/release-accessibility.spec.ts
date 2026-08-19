@@ -19,10 +19,15 @@ test("critical controls keep accessible names, landmarks and a blur-free paint p
   await page.goto("/");
 
   await expect(page.locator("#main-content")).toBeVisible();
-  const visibleNavigationCount = await page
-    .locator('nav[aria-label="Primary navigation"], nav[aria-label="Sidebar navigation"]')
-    .evaluateAll((nodes) => nodes.filter((node) => (node as HTMLElement).offsetParent !== null).length);
-  expect(visibleNavigationCount).toBeGreaterThan(0);
+  const navigations = page.locator('nav[aria-label="Primary navigation"], nav[aria-label="Sidebar navigation"]');
+  let visibleNavigation = false;
+  for (let index = 0; index < await navigations.count(); index += 1) {
+    if (await navigations.nth(index).isVisible()) {
+      visibleNavigation = true;
+      break;
+    }
+  }
+  expect(visibleNavigation).toBe(true);
   await expect(page.getByRole("button", { name: "Previous month" })).toBeVisible();
   await expect(page.getByRole("button", { name: "Next month" })).toBeVisible();
   await expect(page.locator("[data-bixbo-home-paint-island]").getByRole("link", { name: "Profile", exact: true })).toBeVisible();
@@ -62,8 +67,9 @@ test("critical controls keep accessible names, landmarks and a blur-free paint p
   await expect(page.getByRole("button", { name: "Next", exact: true })).toBeVisible();
   await expect(page.getByRole("button", { name: "Close", exact: true })).toBeVisible();
   await page.getByRole("button", { name: "Next", exact: true }).click();
-  await expect(page.getByText("2/5", { exact: true })).toBeVisible();
-  await expect(page.getByRole("button", { name: "Back", exact: true })).toBeVisible();
+  const painNav = page.locator('[data-bixbo-log-surface="pain"] > div > div.sticky').first();
+  await expect(painNav.getByText("2/5", { exact: true })).toBeVisible();
+  await expect(painNav.getByRole("button", { name: "Back", exact: true })).toBeVisible();
 
   await page.goto("/profile");
   await expect(page.getByRole("link", { name: "Manage meds", exact: true })).toBeVisible();
