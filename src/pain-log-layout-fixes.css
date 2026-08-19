@@ -1,30 +1,29 @@
 /* ---------------------------------------------------------------- Log header geometry
-   The global date pill sits between the sheet title and each log's sticky
-   Back/Save (or Back/Next) bar. The bar is moved down with
-   --bixbo-log-date-offset, so normal document flow must reserve the same offset.
-   Without this reservation, the first question starts underneath the sticky bar.
-
-   SheetHeader has a shared mb-2 by default. Full-screen logs must not keep that
-   extra 8px because the date row already owns the complete space between the
-   app header and sticky navigation. Remove only that header margin; do not pull
-   the form surface upward. This makes Date -> Back/Next/Save contiguous while
-   preserving all question/content clearance below the sticky bar. */
+   The global date pill occupies the first 36px of the full-screen log surface.
+   Back/Save and Back/Next must start immediately below it, with no visible gap,
+   while the first question must remain in normal flow below navigation. */
 [data-bixbo-fullscreen-log="true"] > div.flex.h-full.min-h-0.flex-col > div.mb-2 {
   margin-bottom: 0 !important;
 }
 
-/* Standard logs already provide their own normal inter-section gap, therefore
-   reserve exactly the date offset. */
+/* Standard logs already reserve the 36px date row on the scroll surface.
+   Do not add another margin below SaveBar: that was the source of the large
+   empty/question shift. */
 [data-bixbo-log-surface="standard"] [data-bixbo-log-save-bar] {
-  margin-bottom: var(--bixbo-log-date-offset, 0px) !important;
+  margin-bottom: 0 !important;
   background-color: var(--background) !important;
 }
 
-/* Pain owns a custom sticky Back/Next bar instead of SaveBar. Reserve the date
-   offset for every built-in Pain step, including pages 1 and 5. The extra 12px
-   is the intended breathing space below the navigation bar. */
+/* Pain's scroll surface did not reserve the fixed date row. Reserve it here so
+   the sticky Back/Next bar can use the same 36px sticky top without being
+   displaced over the first question. This applies to all five Pain steps.
+   Keep only the intended 12px question breathing space under the nav. */
+[data-bixbo-log-surface="pain"] {
+  padding-top: var(--bixbo-log-date-offset, 36px) !important;
+}
+
 [data-bixbo-log-surface="pain"] > div.flex.min-h-full.flex-col.px-5.pb-4.pt-0 > div.sticky {
-  margin-bottom: calc(var(--bixbo-log-date-offset, 0px) + 12px) !important;
+  margin-bottom: 12px !important;
   background-color: var(--background) !important;
 }
 
@@ -35,9 +34,8 @@
   z-index: 320 !important;
 }
 
-/* Blueberry Cramp pain: keep the existing functional info button, but place it
-   beside the CRAMP PAIN heading rather than in a separate row under the scale.
-   Both current UI languages are covered because aria-label is localized. */
+/* Blueberry Cramp pain: keep the existing functional info button beside the
+   CRAMP PAIN heading rather than in a separate row under the scale. */
 [data-bixbo-log-surface="standard"] section:has(> p + div button:is([aria-label="Cramp pain scale"], [aria-label="Stupnica bolesti pri kŕčoch"])) {
   display: grid;
   grid-template-columns: max-content max-content minmax(0, 1fr);
