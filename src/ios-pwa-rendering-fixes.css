@@ -4,11 +4,17 @@
   @media (display-mode: standalone) {
     /* Home deliberately does not use a <header> element. Keeping this top bar
        in ordinary document flow prevents WebKit from promoting the BIXBO
-       wordmark and greeting into the soft sticky-header compositor layer. */
+       wordmark and greeting into the soft sticky-header compositor layer.
+
+       Dynamic Island live activities (notably an active phone call) can paint a
+       system-owned soft material/shadow below the island. App CSS cannot turn
+       that system layer off, so reserve extra vertical clearance on installed
+       iPhones and keep the Home artwork below it. */
     [data-bixbo-home-paint-island] {
       position: relative !important;
       top: auto !important;
       z-index: auto !important;
+      padding-top: calc(max(0.5rem, env(safe-area-inset-top)) + 2.75rem) !important;
       -webkit-backdrop-filter: none !important;
       backdrop-filter: none !important;
       filter: none !important;
