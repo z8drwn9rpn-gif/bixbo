@@ -5,6 +5,7 @@
 importScripts("/bixbo-offline-runtime.js");
 
 const BIXBO_PUSH_SW_VERSION = "__BIXBO_DEPLOY_SHA__";
+const BIXBO_SW_REPLACES_ACTIVE_WORKER = Boolean(self.registration.active);
 const MED_ACTION_DB = "bixbo-notification-actions";
 const MED_ACTION_STORE = "pending-med-actions";
 
@@ -32,9 +33,9 @@ const BIXBO_SW_REFRESH_PARAM = "__bixbo_sw_update";
 async function claimClientsAndRefreshForDeployment() {
   await self.clients.claim();
 
-  // Only production output is stamped. Avoid reloads in local/CI service-worker
-  // installs, while making each real release reliably replace stale iOS PWA UI.
-  if (BIXBO_PUSH_SW_VERSION.startsWith("__BIXBO_")) return;
+  // Only a stamped production update should navigate an already-open app.
+  // First-time installs claim the client without causing an extra navigation.
+  if (BIXBO_PUSH_SW_VERSION.startsWith("__BIXBO_") || !BIXBO_SW_REPLACES_ACTIVE_WORKER) return;
 
   const clientList = await self.clients.matchAll({ type: "window", includeUncontrolled: true });
   await Promise.allSettled(clientList.map(async (client) => {
