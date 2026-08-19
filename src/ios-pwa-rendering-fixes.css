@@ -22,13 +22,16 @@
       overflow: visible !important;
       text-overflow: clip !important;
       white-space: normal !important;
+      text-shadow: none !important;
+      -webkit-text-stroke: 0 !important;
       filter: none !important;
       transform: none !important;
       perspective: none !important;
       will-change: auto !important;
       contain: none !important;
       opacity: 1 !important;
-      -webkit-font-smoothing: antialiased !important;
+      -webkit-font-smoothing: auto !important;
+      text-rendering: geometricPrecision;
     }
 
     header[data-bixbo-app-header][data-bixbo-home-header="true"] h1[data-bixbo-app-title] *,
@@ -44,8 +47,10 @@
     header[data-bixbo-app-header][data-bixbo-home-header="true"] [data-bixbo-display-title] + a {
       text-shadow: none !important;
       -webkit-text-stroke: 0 !important;
-      -webkit-font-smoothing: antialiased !important;
-      text-rendering: optimizeLegibility;
+      filter: none !important;
+      transform: none !important;
+      -webkit-font-smoothing: auto !important;
+      text-rendering: geometricPrecision;
       opacity: 1 !important;
     }
   }
