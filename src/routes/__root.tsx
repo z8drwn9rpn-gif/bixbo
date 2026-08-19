@@ -94,31 +94,16 @@ const APPLE_PWA_LAUNCH_SPLASH_CSS = `
     filter: drop-shadow(0 10px 18px rgba(57, 70, 43, 0.16));
   }
 
-  /* iOS Home Screen web apps use a different compositor path from a normal
-     Safari tab. Keep the Home title out of the standalone sticky/filter layer:
-     WebKit can otherwise rasterize the wordmark and greeting as a soft bitmap. */
-  html[data-bixbo-pwa-mode="standalone"] header[data-bixbo-app-header][data-bixbo-home-header="true"] {
-    position: relative !important;
-    top: auto !important;
+  /* Home is a normal-flow paint island. Keep it flat during standalone PWA
+     startup so WebKit never promotes the wordmark or mascot into a soft layer. */
+  html[data-bixbo-pwa-mode="standalone"] [data-bixbo-home-paint-island],
+  html[data-bixbo-pwa-mode="standalone"] [data-bixbo-home-paint-island] * {
     -webkit-backdrop-filter: none !important;
     backdrop-filter: none !important;
     filter: none !important;
     transform: none !important;
     perspective: none !important;
     will-change: auto !important;
-  }
-  html[data-bixbo-pwa-mode="standalone"] header[data-bixbo-app-header][data-bixbo-home-header="true"] img {
-    filter: none !important;
-    transform: none !important;
-  }
-  html[data-bixbo-pwa-mode="standalone"] header[data-bixbo-app-header][data-bixbo-home-header="true"] h1,
-  html[data-bixbo-pwa-mode="standalone"] header[data-bixbo-app-header][data-bixbo-home-header="true"] h1 * {
-    -webkit-text-stroke: 0 !important;
-    text-shadow: none !important;
-    filter: none !important;
-    transform: none !important;
-    opacity: 1 !important;
-    -webkit-font-smoothing: auto !important;
   }
 `;
 
@@ -195,7 +180,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { name: "apple-mobile-web-app-title", content: "BIXBO" },
       { name: "application-name", content: "BIXBO" },
       { name: "apple-mobile-web-app-capable", content: "yes" },
-      { name: "apple-mobile-web-app-status-bar-style", content: "black-translucent" },
+      { name: "apple-mobile-web-app-status-bar-style", content: "default" },
       { name: "mobile-web-app-capable", content: "yes" },
       { property: "og:title", content: "BIXBO — Health diary" },
       { property: "og:description", content: "A calm diary for your cycle, pain, meds and notes." },
