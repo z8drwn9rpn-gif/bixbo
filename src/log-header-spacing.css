@@ -1,0 +1,5 @@
+/* Keep every detailed log flush under the global date control. The log form itself may keep bottom padding, but no form-root top padding/margin may create a blank strip before its sticky action bar. */
+[data-bixbo-log-surface] > :first-child {
+  padding-top: 0 !important;
+  margin-top: 0 !important;
+}
