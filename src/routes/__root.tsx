@@ -22,6 +22,16 @@ import { clearStaleAssetRecoveryGuard, recoverFromStaleAssetError } from "@/lib/
 import { recordRuntimeDiagnosticIssue } from "@/lib/appDiagnostics";
 import { installRuntimeDiagnostics } from "@/lib/runtimeDiagnosticsInstaller";
 
+const LANGUAGE_BOOTSTRAP_SCRIPT = `(() => {
+  try {
+    const raw = localStorage.getItem("bixbo:v2") || localStorage.getItem("bixbo:v1");
+    if (!raw) return;
+    const stored = JSON.parse(raw);
+    const storedLanguage = stored && stored.settings && stored.settings.language;
+    document.documentElement.lang = storedLanguage === "sk" ? "sk" : "en";
+  } catch {}
+})();`;
+
 const THEME_BOOTSTRAP_SCRIPT = `(() => {
   try {
     const root = document.documentElement;
@@ -166,7 +176,7 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
   console.error(error);
   useEffect(() => { const recovered = recoverFromStaleAssetError(error); if (!recovered) recordRuntimeDiagnosticIssue("route", error); }, [error]);
   const retry = () => { clearStaleAssetRecoveryGuard(); reset(); window.location.reload(); };
-  return <div className="flex min-h-screen items-center justify-center bg-background px-4"><div className="w-full max-w-md rounded-3xl border border-border/70 bg-surface p-6 text-center shadow-sm ring-1 ring-border/70 sm:p-8"><h1 className="text-xl font-semibold tracking-tight text-foreground">This page didn't load</h1><p className="mt-2 text-sm text-muted-foreground">Something went wrong on our end. You can try refreshing or head back home.</p><div className="mt-6 flex flex-wrap justify-center gap-2"><button onClick={retry} className="inline-flex items-center justify-center rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90">Try again</button><Link to="/diagnostics" className="inline-flex items-center justify-center rounded-xl border border-primary/40 bg-primary/10 px-4 py-2 text-sm font-semibold text-primary transition-colors hover:bg-primary/15">App scan</Link><Link to="/" className="inline-flex items-center justify-center rounded-xl border border-input bg-background px-4 py-2 text-sm font-semibold text-foreground transition-colors hover:bg-accent">Go home</Link></div></div></div>;
+  return <div className="flex min-h-screen items-center justify-center bg-background px-4"><div className="w-full max-w-md rounded-3xl border border-border/70 bg-surface p-6 text-center shadow-sm ring-1 ring-border/70 sm:p-8"><h1 className="text-xl font-semibold tracking-tight text-foreground">This page didn't load</h1><p className="mt-2 text-sm text-muted-foreground">Something went wrong on our end. You can try refreshing or head back home.</p><div className="mt-6 flex flex-wrap justify-center gap-2"><button type="button" onClick={retry} className="inline-flex min-h-11 items-center justify-center rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">Try again</button><Link to="/diagnostics" className="inline-flex min-h-11 items-center justify-center rounded-xl border border-primary/40 bg-primary/10 px-4 py-2 text-sm font-semibold text-primary transition-colors hover:bg-primary/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">App scan</Link><Link to="/" className="inline-flex min-h-11 items-center justify-center rounded-xl border border-input bg-background px-4 py-2 text-sm font-semibold text-foreground transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">Go home</Link></div></div></div>;
 }
 
 export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()({
@@ -209,7 +219,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
 });
 
 function RootShell({ children }: { children: ReactNode }) {
-  return <html lang="en" suppressHydrationWarning><head><meta name="theme-color" content="#FBF7F3" /><meta name="color-scheme" content="light dark" /><script dangerouslySetInnerHTML={{ __html: THEME_BOOTSTRAP_SCRIPT }} /><style dangerouslySetInnerHTML={{ __html: APPLE_PWA_LAUNCH_SPLASH_CSS }} /><HeadContent /></head><body data-bixbo-app-root><div id="bixbo-ios-launch-splash" aria-hidden="true"><img src="/bixbo-mascot-user.png?v=20260816-launch6" alt="" fetchPriority="high" /></div><script dangerouslySetInnerHTML={{ __html: APPLE_PWA_LAUNCH_SPLASH_BOOTSTRAP }} />{children}<Scripts /></body></html>;
+  return <html lang="en" suppressHydrationWarning><head><meta name="theme-color" content="#FBF7F3" /><meta name="color-scheme" content="light dark" /><script dangerouslySetInnerHTML={{ __html: LANGUAGE_BOOTSTRAP_SCRIPT }} /><script dangerouslySetInnerHTML={{ __html: THEME_BOOTSTRAP_SCRIPT }} /><style dangerouslySetInnerHTML={{ __html: APPLE_PWA_LAUNCH_SPLASH_CSS }} /><HeadContent /></head><body data-bixbo-app-root><div id="bixbo-ios-launch-splash" aria-hidden="true"><img src="/bixbo-mascot-user.png?v=20260816-launch6" alt="" fetchPriority="high" /></div><script dangerouslySetInnerHTML={{ __html: APPLE_PWA_LAUNCH_SPLASH_BOOTSTRAP }} />{children}<Scripts /></body></html>;
 }
 
 function RootComponent() {

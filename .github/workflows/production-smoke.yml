@@ -27,11 +27,15 @@ jobs:
           set -euo pipefail
 
           check_live() {
-            local root privacy terms mcp
+            local root privacy terms mcp manifest sw offline_runtime headers
             root="$(curl -fsS --max-time 20 "$BASE_URL/")" || return 1
             privacy="$(curl -fsS --max-time 20 "$BASE_URL/privacy")" || return 1
             terms="$(curl -fsS --max-time 20 "$BASE_URL/terms")" || return 1
             mcp="$(curl -fsS --max-time 20 "$BASE_URL/mcp")" || return 1
+            manifest="$(curl -fsS --max-time 20 "$BASE_URL/manifest.json")" || return 1
+            sw="$(curl -fsS --max-time 20 "$BASE_URL/bixbo-push-sw.js")" || return 1
+            offline_runtime="$(curl -fsS --max-time 20 "$BASE_URL/bixbo-offline-runtime.js")" || return 1
+            headers="$(curl -fsS --max-time 20 -D - -o /dev/null "$BASE_URL/" | tr -d '\r')" || return 1
 
             grep -qi 'BIXBO' <<<"$root" || return 1
             grep -q 'Privacy Policy' <<<"$privacy" || return 1
@@ -39,6 +43,24 @@ jobs:
             grep -q 'bixbo-my-health-diary' <<<"$mcp" || return 1
             ! grep -Fq 'BIXBO operator' <<<"$privacy" || return 1
             ! grep -Fq 'BIXBO operator' <<<"$terms" || return 1
+
+            grep -q '"id": "/"' <<<"$manifest" || return 1
+            grep -q '"start_url": "/"' <<<"$manifest" || return 1
+            grep -q '"display": "standalone"' <<<"$manifest" || return 1
+            grep -q 'BIXBO_PUSH_SW_VERSION' <<<"$sw" || return 1
+            grep -q 'importScripts("/bixbo-offline-runtime.js")' <<<"$sw" || return 1
+            grep -q 'self.addEventListener("fetch"' <<<"$offline_runtime" || return 1
+            grep -q 'networkFirstNavigation' <<<"$offline_runtime" || return 1
+
+            curl -fsS --max-time 20 -o /dev/null "$BASE_URL/icon-192.png" || return 1
+            curl -fsS --max-time 20 -o /dev/null "$BASE_URL/icon-512.png" || return 1
+            curl -fsS --max-time 20 -o /dev/null "$BASE_URL/apple-touch-icon.png" || return 1
+
+            grep -qi '^x-content-type-options: nosniff' <<<"$headers" || return 1
+            grep -qi '^x-frame-options: DENY' <<<"$headers" || return 1
+            grep -qi '^referrer-policy: no-referrer' <<<"$headers" || return 1
+            grep -qi '^permissions-policy:.*camera=()' <<<"$headers" || return 1
+            grep -qi '^content-security-policy:.*frame-ancestors' <<<"$headers" || return 1
           }
 
           for attempt in $(seq 1 30); do

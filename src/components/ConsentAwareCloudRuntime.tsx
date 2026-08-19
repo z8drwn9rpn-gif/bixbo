@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 
 import { supabase } from "@/integrations/supabase/client";
 import { MedicationNotificationActionBridge } from "@/components/MedicationNotificationActionBridge";
+import { ensureAppServiceWorker } from "@/lib/appServiceWorker";
 import {
   CLOUD_HEALTH_CONSENT_CHANGED_EVENT,
   cloudHealthConsentState,
@@ -74,6 +75,12 @@ function ActiveCloudHealthRuntime() {
  */
 export function ConsentAwareCloudRuntime() {
   const [consentState, setConsentState] = useState<CloudHealthConsentState>("signed-out");
+
+  // Offline/PWA shell support is app infrastructure, not health-data processing
+  // and not notification permission. Register it for every supported browser.
+  useEffect(() => {
+    void ensureAppServiceWorker();
+  }, []);
 
   useEffect(() => {
     let cancelled = false;

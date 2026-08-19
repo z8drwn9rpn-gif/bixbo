@@ -5,6 +5,9 @@ on:
     branches: [main]
   pull_request:
 
+permissions:
+  contents: read
+
 concurrency:
   group: bixbo-checks-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
@@ -12,6 +15,7 @@ concurrency:
 jobs:
   quality:
     runs-on: ubuntu-latest
+    timeout-minutes: 45
     steps:
       - uses: actions/checkout@v7.0.1
       - uses: oven-sh/setup-bun@v2
@@ -57,13 +61,65 @@ jobs:
         run: timeout 75s bun run smoke:ssr
       - name: Install Chromium and WebKit
         run: bunx playwright install --with-deps chromium webkit
-      # Run each Playwright project in its own process. Each invocation therefore gets
-      # a fresh Wrangler webServer instead of keeping one dev server alive across the
-      # full desktop + mobile suite. This prevents a dead server from cascading into
-      # dozens of misleading ERR_CONNECTION_REFUSED failures in the next project.
+
+      # Keep each browser isolated behind a fresh Wrangler process, but do not
+      # stop at the first browser failure. The final gate fails after all three
+      # outcomes are known so one regression cannot hide another platform.
       - name: Browser E2E — Chromium desktop
+        id: e2e_desktop
+        continue-on-error: true
         run: bunx playwright test --project=desktop
+      - name: Upload Chromium desktop evidence
+        if: always()
+        continue-on-error: true
+        uses: actions/upload-artifact@v4
+        with:
+          name: bixbo-e2e-desktop-${{ github.run_attempt }}
+          path: test-results
+          if-no-files-found: ignore
+          retention-days: 7
+
       - name: Browser E2E — Chromium mobile
+        id: e2e_mobile
+        continue-on-error: true
         run: bunx playwright test --project=mobile
+      - name: Upload Chromium mobile evidence
+        if: always()
+        continue-on-error: true
+        uses: actions/upload-artifact@v4
+        with:
+          name: bixbo-e2e-mobile-${{ github.run_attempt }}
+          path: test-results
+          if-no-files-found: ignore
+          retention-days: 7
+
       - name: Browser E2E — WebKit
+        id: e2e_webkit
+        continue-on-error: true
         run: bunx playwright test --project=webkit-mobile
+      - name: Upload WebKit evidence
+        if: always()
+        continue-on-error: true
+        uses: actions/upload-artifact@v4
+        with:
+          name: bixbo-e2e-webkit-${{ github.run_attempt }}
+          path: test-results
+          if-no-files-found: ignore
+          retention-days: 7
+
+      - name: Enforce browser release gate
+        if: always()
+        shell: bash
+        env:
+          DESKTOP_OUTCOME: ${{ steps.e2e_desktop.outcome }}
+          MOBILE_OUTCOME: ${{ steps.e2e_mobile.outcome }}
+          WEBKIT_OUTCOME: ${{ steps.e2e_webkit.outcome }}
+        run: |
+          set -euo pipefail
+          echo "Desktop E2E: $DESKTOP_OUTCOME"
+          echo "Mobile E2E: $MOBILE_OUTCOME"
+          echo "WebKit E2E: $WEBKIT_OUTCOME"
+          if [ "$DESKTOP_OUTCOME" != "success" ] || [ "$MOBILE_OUTCOME" != "success" ] || [ "$WEBKIT_OUTCOME" != "success" ]; then
+            echo "One or more browser release gates failed. Review the uploaded screenshot/trace evidence."
+            exit 1
+          fi

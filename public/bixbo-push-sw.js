@@ -1,8 +1,10 @@
-/* BIXBO push/messaging service worker.
-   Push + notification handling only. It intentionally has NO fetch handler and
-   caches nothing, so it cannot serve stale HTML or interfere with app updates. */
+/* BIXBO app + push/messaging service worker.
+   Push/notification actions live in this file. A separate imported runtime
+   provides network-first app-shell/static caching for offline PWA resilience. */
 
-const BIXBO_PUSH_SW_VERSION = "2026.08.19.2";
+importScripts("/bixbo-offline-runtime.js");
+
+const BIXBO_PUSH_SW_VERSION = "2026.08.19.3";
 const MED_ACTION_DB = "bixbo-notification-actions";
 const MED_ACTION_STORE = "pending-med-actions";
 

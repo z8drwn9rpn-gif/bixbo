@@ -14,7 +14,9 @@ export default defineConfig({
   reporter: process.env.CI ? [["line"], ["github"]] : "list",
   use: {
     baseURL,
+    serviceWorkers: "allow",
     trace: "retain-on-failure",
+    screenshot: "only-on-failure",
   },
   projects: [
     { name: "desktop", use: { browserName: "chromium", viewport: { width: 1280, height: 900 } } },
