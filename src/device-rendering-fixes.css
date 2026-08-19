@@ -253,6 +253,24 @@ div:has(> div > [data-bixbo-heatmap-half]) > div.mt-3 {
   box-shadow: inset 1px 1px 1px rgba(255,255,255,.06), 0 1px 2px rgba(0,0,0,.28) !important;
 }
 
+/* ------------------------------------------- iOS standalone PWA overlay blur
+   Installed iPhone PWAs rasterize the whole viewport when a full-screen
+   backdrop-filter is painted, which visibly blurs the BIXBO header/wordmark
+   behind the Month Summary overlay. Remove only the backdrop blur in that
+   mode; the dim layer, modal card and every other browser stay unchanged. */
+html[data-bixbo-ios-standalone="true"] [data-bixbo-overlay-backdrop="month-summary"] {
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+/* ------------------------------------------------- Scale legend readability
+   The log sheet date pill is fixed near the top of the viewport. While a pain
+   or intensity scale explanation is open it must never cover that text. */
+html[data-bixbo-scale-legend-open="true"] [data-bixbo-log-date-control] {
+  display: none !important;
+  pointer-events: none !important;
+}
+
 /* ------------------------------------------------------ Home header sharpness
    AppShell applies its display shadow to the whole h1. Home nests the BIXBO
    wordmark and profile greeting inside that h1, so WebKit ends up painting the
