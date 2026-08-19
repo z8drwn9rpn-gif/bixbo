@@ -1,0 +1,38 @@
+name: Fix recipe parser i18n
+
+on:
+  push:
+    branches: [feature/eyes-recipes]
+
+permissions:
+  contents: write
+
+jobs:
+  fix:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feature/eyes-recipes
+          fetch-depth: 0
+      - name: Encode parser literals
+        run: python scripts/fix-recipe-i18n.py
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+      - run: bun install --frozen-lockfile
+      - run: bun run audit:i18n
+      - run: bun run architecture
+      - run: bun run audit:ui-emoji
+      - run: bun run typecheck
+      - run: bun run lint
+      - run: bun run test
+      - run: bun run build
+      - name: Commit validated fix
+        run: |
+          git config user.name "BIXBO automation"
+          git config user.email "actions@users.noreply.github.com"
+          git rm .github/workflows/fix-recipe-i18n.yml scripts/fix-recipe-i18n.py
+          git add src/features/notes/RecipesView.tsx
+          git commit -m "Pass recipe parser i18n audit"
+          git push origin HEAD:feature/eyes-recipes
