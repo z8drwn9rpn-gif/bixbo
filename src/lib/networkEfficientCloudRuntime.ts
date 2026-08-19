@@ -76,7 +76,7 @@ export function useNetworkEfficientCloudSync(): void {
 
     let stopped = false;
     let pendingPush: BixboData | null = null;
-    let pushTimer: ReturnType<typeof setTimeout> | null = null;
+    let pushTimer: number | null = null;
     let pushInFlight: Promise<void> | null = null;
     let reconcileInFlight: Promise<void> | null = null;
     let lastCloudSnapshotKey: string | null = null;
@@ -222,7 +222,7 @@ export function useNetworkEfficientNotificationRuntime(): void {
 
     let stopped = false;
     let lastServerSyncAt = 0;
-    let serverSyncTimer: ReturnType<typeof setTimeout> | null = null;
+    let serverSyncTimer: number | null = null;
 
     const localTick = () => {
       if (stopped) return;
