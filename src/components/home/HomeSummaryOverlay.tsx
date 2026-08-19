@@ -10,6 +10,25 @@ function finite(value: unknown): value is number {
   return typeof value === "number" && Number.isFinite(value);
 }
 
+function customLogEntryLabel(entry: unknown): string | null {
+  if (!entry || typeof entry !== "object") return null;
+  const record = entry as Record<string, unknown>;
+
+  // Older BIXBO custom logs stored their visible value directly as `text`.
+  if (typeof record.text === "string" && record.text.trim()) return record.text.trim();
+  if (typeof record.note === "string" && record.note.trim()) return record.note.trim();
+
+  // Current custom logs store named values. Prefer a readable text value when
+  // one exists so Month Summary tells the user what the saved entry actually is.
+  if (record.values && typeof record.values === "object") {
+    const values = Object.values(record.values as Record<string, unknown>);
+    const textValue = values.find((value) => typeof value === "string" && value.trim());
+    if (typeof textValue === "string") return textValue.trim();
+  }
+
+  return null;
+}
+
 export function HomeSummaryOverlay({ data, onClose, onOpenCalendar, initialMonth }: {
   data: BixboData;
   onClose: () => void;
@@ -87,7 +106,9 @@ export function HomeSummaryOverlay({ data, onClose, onOpenCalendar, initialMonth
     const histamineEntries = logs.flatMap(({ log }) => log?.histamine ?? []);
     const histamineFlareCount = histamineEntries.filter((entry) => entry.flare).length + foodEntries.filter((entry) => entry.histamineFlare === true).length;
     const extraMedEntries = logs.flatMap(({ log }) => log?.extraMeds ?? []);
-    const customLogCount = logs.reduce((sum, { log }) => sum + Object.values(log?.customLogs ?? {}).reduce((inner, entries) => inner + entries.length, 0), 0);
+    const customLogEntries = logs.flatMap(({ log }) => Object.values(log?.customLogs ?? {}).flat());
+    const customLogCount = customLogEntries.length;
+    const customLogLabels = [...new Set(customLogEntries.map(customLogEntryLabel).filter((label): label is string => Boolean(label)))];
     const additionalFieldCount = logs.reduce((sum, { log }) => sum + Object.values(log?.adminFields ?? {}).reduce((inner, entries) => inner + entries.length, 0), 0);
     const pregnancyLogDays = logs.filter(({ log }) => log?.pregnancy && Object.keys(log.pregnancy).length > 0).length;
     const postpartumLogDays = logs.filter(({ log }) => log?.postpartum && Object.keys(log.postpartum).length > 0).length;
@@ -127,6 +148,7 @@ export function HomeSummaryOverlay({ data, onClose, onOpenCalendar, initialMonth
       histamineFlareCount,
       extraMedEntries,
       customLogCount,
+      customLogLabels,
       additionalFieldCount,
       pregnancyLogDays,
       postpartumLogDays,
@@ -165,7 +187,7 @@ export function HomeSummaryOverlay({ data, onClose, onOpenCalendar, initialMonth
     month.periodDays.length ? { key: "period", icon: <Ico e="🫐" size={21} />, label: t("Blueberry"), meta: `${month.periodDays.length} ${month.periodDays.length === 1 ? t("day") : t("days")}`, value: month.periodText, accent: "#7467D8" } : null,
     month.pregnancyLogDays ? { key: "pregnancy", icon: <Ico e="🤰" size={21} />, label: t("Pregnancy log"), meta: `${month.pregnancyLogDays} ${t("days logged")}`, value: t("Logged"), accent: "#B8768B" } : null,
     month.postpartumLogDays ? { key: "postpartum", icon: <Ico e="🫶" size={21} />, label: t("Postpartum log"), meta: `${month.postpartumLogDays} ${t("days logged")}`, value: t("Logged"), accent: "#A8798F" } : null,
-    month.customLogCount ? { key: "customLogs", icon: <Ico e="➕" size={21} />, label: t("Other saved entries"), meta: meta(month.customLogCount), value: `${month.customLogCount}`, accent: "#6F7F52" } : null,
+    month.customLogCount ? { key: "customLogs", icon: <Ico e="➕" size={21} />, label: month.customLogLabels.length === 1 ? month.customLogLabels[0] : t("Saved entries"), meta: meta(month.customLogCount), value: month.customLogLabels.length > 1 ? month.customLogLabels.slice(0, 2).join(" · ") : t("Logged"), accent: "#6F7F52" } : null,
     month.additionalFieldCount ? { key: "additionalFields", icon: <Ico e="🧩" size={21} />, label: t("Additional fields"), meta: meta(month.additionalFieldCount), value: `${month.additionalFieldCount}`, accent: "#7D719A" } : null,
     month.noteEntryCount ? { key: "notes", icon: <NoteIcon size={21} />, label: t("Notes"), meta: meta(month.noteEntryCount), value: t("Logged"), accent: "#B89A36" } : null,
   ].filter((row): row is NonNullable<typeof row> => row !== null);
@@ -174,7 +196,7 @@ export function HomeSummaryOverlay({ data, onClose, onOpenCalendar, initialMonth
 
   return createPortal(
     <div className="fixed inset-0 z-[950] flex items-center justify-center px-5 pb-[max(1rem,env(safe-area-inset-bottom))] pt-[max(1rem,env(safe-area-inset-top))]">
-      <button type="button" aria-label={t("Close summary")} data-bixbo-overlay-backdrop="month-summary" className="absolute inset-0 bg-black/40 backdrop-blur-[1px]" onClick={onClose} />
+      <button type="button" aria-label={t("Close summary")} data-bixbo-overlay-backdrop="month-summary" className="absolute inset-0 bg-black/40" onClick={onClose} />
       <section className="relative z-10 flex max-h-[82dvh] w-full max-w-[350px] flex-col overflow-hidden rounded-[30px] border border-border/70 bg-background shadow-[0_24px_70px_-30px_rgba(24,31,17,.55),0_6px_20px_-12px_rgba(24,31,17,.35)]">
         <div className="shrink-0 px-5 pb-3 pt-5">
           <div className="flex items-start justify-between gap-3">
