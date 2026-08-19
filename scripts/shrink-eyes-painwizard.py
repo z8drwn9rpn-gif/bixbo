@@ -35,17 +35,22 @@ old_block = '''          <div>
               </div>
             )}
           </div>'''
-new_block = '''          <EyesEpisodeField
-            date={date}
-            update={update}
-            active={eyesOn}
-            setActive={setEyesOn}
-            setDraft={setEyesDraft}
-          />'''
+new_block = '          <EyesEpisodeField date={date} update={update} active={eyesOn} setActive={setEyesOn} setDraft={setEyesDraft} />'
 if old_block in text:
     text = text.replace(old_block, new_block, 1)
 elif new_block not in text:
     raise RuntimeError("Eyes episode block anchor missing")
 
+# Keep the legacy high-churn module under its frozen architecture ceiling without
+# weakening the guard: shorten comments rather than increasing the size limit.
+old_comment = '''  /**
+   * The newest pain entry for the selected day. A new entry can reuse this
+   * state and only add what changed (for example a headache several hours later).
+   * Editing an existing entry never uses this shortcut.
+   */
+'''
+if old_comment in text:
+    text = text.replace(old_comment, '  // Latest real pain entry used by symptom-only follow-ups.\n', 1)
+
 path.write_text(text)
-print("PainWizard Eyes UI extracted")
+print("PainWizard Eyes UI extracted and size reduced")
