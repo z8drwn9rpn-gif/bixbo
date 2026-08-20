@@ -15,6 +15,7 @@ export interface EyesEpisode {
   painIntensity?: EyesPainIntensity;
   painWithMovement: boolean;
   visionChanges: string[];
+  sensitivity?: string[];
   note?: string;
 }
 
@@ -26,6 +27,14 @@ export const EYES_VISION_CHANGES = [
   "Dim vision",
   "Colors less vivid",
   "Visual field change",
+] as const;
+
+export const EYES_SENSITIVITY = [
+  "Light sensitivity (photophobia)",
+  "Screen sensitivity",
+  "Glare sensitivity",
+  "Watery eyes",
+  "Dry / gritty eyes",
 ] as const;
 
 export const EYES_PAIN_INTENSITY_OPTIONS: Array<{
@@ -66,6 +75,7 @@ export function EyesForm({
   const [painIntensity, setPainIntensity] = useState<EyesPainIntensity>(initialEntry?.painIntensity ?? "none");
   const [painWithMovement, setPainWithMovement] = useState(initialEntry?.painWithMovement ?? false);
   const [visionChanges, setVisionChanges] = useState<string[]>(initialEntry?.visionChanges ?? []);
+  const [sensitivity, setSensitivity] = useState<string[]>(initialEntry?.sensitivity ?? []);
   const [note, setNote] = useState(initialEntry?.note ?? "");
   const draftId = useRef(initialEntry?.id ?? crypto.randomUUID()).current;
 
@@ -95,9 +105,10 @@ export function EyesForm({
       painIntensity,
       painWithMovement,
       visionChanges,
+      sensitivity,
       note: note.trim() || undefined,
     }),
-    [affected, draftId, note, painIntensity, painWithMovement, time, visionChanges],
+    [affected, draftId, note, painIntensity, painWithMovement, sensitivity, time, visionChanges],
   );
 
   useEffect(() => {
@@ -130,14 +141,10 @@ export function EyesForm({
 
         <Field label="Affected eye">
           <div className="mt-2 flex flex-wrap gap-2">
-            {([
-              ["left", "Left"],
-              ["right", "Right"],
-              ["both", "Both"],
-            ] as const).map(([value, label]) => (
-              <Chip key={value} active={affected === value} onClick={() => setAffected(value)}>
-                {t(label)}
-              </Chip>
+            {([[
+              "left", "Left"
+            ], ["right", "Right"], ["both", "Both"]] as const).map(([value, label]) => (
+              <Chip key={value} active={affected === value} onClick={() => setAffected(value)}>{t(label)}</Chip>
             ))}
           </div>
         </Field>
@@ -153,16 +160,12 @@ export function EyesForm({
                   type="button"
                   onClick={() => setPainIntensity(option.value)}
                   aria-pressed={active}
-                  className={`min-h-[104px] rounded-2xl border px-2 py-3 text-center transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
-                    active
-                      ? "border-primary/35 bg-primary/10 text-foreground shadow-sm"
-                      : "border-border bg-surface text-foreground hover:bg-tint"
-                  }`}
+                  className={`min-h-[82px] rounded-2xl border px-2 py-2 text-center transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${active ? "border-primary/35 bg-primary/10 text-foreground shadow-sm" : "border-border bg-surface text-foreground hover:bg-tint"}`}
                 >
-                  <span className="mx-auto grid h-11 w-11 place-items-center" aria-hidden="true">
-                    <BixboEyePainIcon level={option.level} size={44} />
+                  <span className="mx-auto grid h-9 w-9 place-items-center" aria-hidden="true">
+                    <BixboEyePainIcon level={option.level} size={36} />
                   </span>
-                  <span className="mt-2 block text-xs font-semibold leading-tight">{t(option.label)}</span>
+                  <span className="mt-1.5 block text-[11px] font-semibold leading-tight">{t(option.label)}</span>
                 </button>
               );
             })}
@@ -172,12 +175,8 @@ export function EyesForm({
         <Field label="Pain with eye movement">
           <p className="mt-1 text-xs text-muted-foreground">{t("Does it hurt when you move your eyes?")}</p>
           <div className="mt-2 flex gap-2">
-            <Chip active={!painWithMovement} onClick={() => setPainWithMovement(false)}>
-              {t("No")}
-            </Chip>
-            <Chip active={painWithMovement} onClick={() => setPainWithMovement(true)}>
-              {t("Yes")}
-            </Chip>
+            <Chip active={!painWithMovement} onClick={() => setPainWithMovement(false)}>{t("No")}</Chip>
+            <Chip active={painWithMovement} onClick={() => setPainWithMovement(true)}>{t("Yes")}</Chip>
           </div>
         </Field>
 
@@ -195,10 +194,23 @@ export function EyesForm({
               setVisionChanges((current) => current.map((item) => (item === oldValue ? newValue : item)));
             }}
             selected={visionChanges}
-            onToggle={(value) => setVisionChanges((current) => (
-              current.includes(value) ? current.filter((item) => item !== value) : [...current, value]
-            ))}
+            onToggle={(value) => setVisionChanges((current) => current.includes(value) ? current.filter((item) => item !== value) : [...current, value])}
           />
+        </Field>
+
+        <Field label="Eye sensitivity & discomfort">
+          <p className="mt-1 text-xs text-muted-foreground">{t("Is anything making your eyes feel unusually sensitive or irritated?")}</p>
+          <div className="mt-2 flex flex-wrap gap-2">
+            {EYES_SENSITIVITY.map((value) => (
+              <Chip
+                key={value}
+                active={sensitivity.includes(value)}
+                onClick={() => setSensitivity((current) => current.includes(value) ? current.filter((item) => item !== value) : [...current, value])}
+              >
+                {t(value)}
+              </Chip>
+            ))}
+          </div>
         </Field>
 
         <Field label="Note (optional)">
