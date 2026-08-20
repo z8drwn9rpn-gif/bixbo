@@ -198,68 +198,63 @@ html[data-bixbo-log-form-open] [data-bixbo-bottom-nav] {
   }
 }
 
-/* Recipe cards intentionally use the same handwritten face shown in the
-   recipe-name field while editing. Override the global rounded typography
-   across the complete physical paper card, including editable controls. */
-#main-content [class*="bg-[#FBF7EC]"][class*="border-[#D4CCB8]"],
-#main-content [class*="bg-[#FBF7EC]"][class*="border-[#D4CCB8]"] * {
+/* Recipe typography: only the recipe name keeps the handwritten face.
+   Ingredients, method, notes and their copy use the same app typography. */
+#main-content [class*="bg-[#FBF7EC]"][class*="border-[#D4CCB8]"] h2,
+#main-content [class*="bg-[#FBF7EC]"][class*="border-[#D4CCB8]"] input[class*="text-[30px]"] {
   font-family: "Snell Roundhand", "Segoe Script", "Bradley Hand", cursive !important;
 }
 
-/* Recipe paper reference pass: use the supplied card as the visual source of
-   truth. The ornate handwriting stays, but the whole card is scaled up so the
-   ingredient and method copy remains readable on an iPhone. */
-#main-content [class*="bg-[#FBF7EC]"][class*="border-[#D4CCB8]"] h2 {
-  font-size: clamp(42px, 11vw, 50px) !important;
-  line-height: 0.98 !important;
-  font-weight: 600 !important;
-  letter-spacing: -0.02em !important;
+/* Keep the edit-title size at its original recipe-card size even on iOS, where
+   the generic anti-zoom rule otherwise forces every input to 16px. */
+#main-content [class*="bg-[#FBF7EC]"][class*="border-[#D4CCB8]"] input[class*="text-[30px]"] {
+  font-size: 30px !important;
+  line-height: 1 !important;
 }
 
-#main-content [class*="bg-[#FBF7EC]"][class*="border-[#D4CCB8]"] h3 {
-  font-size: 22px !important;
-  line-height: 1.15 !important;
-  font-weight: 600 !important;
-}
-
-#main-content [class*="bg-[#FBF7EC]"][class*="border-[#D4CCB8]"] li {
-  font-size: 17px !important;
-  line-height: 1.6 !important;
-}
-
-#main-content [class*="bg-[#FBF7EC]"][class*="border-[#D4CCB8]"] section > p,
-#main-content [class*="bg-[#FBF7EC]"][class*="border-[#D4CCB8]"] section > div > p {
-  font-size: 16px !important;
-  line-height: 1.55 !important;
+/* PREP / COOK / PORTIONS / CATEGORY are one bold metadata band, including
+   their values. Keep the pre-enlargement display sizes. */
+#main-content [class*="bg-[#FBF7EC]"][class*="border-[#D4CCB8]"] [class*="grid-cols-[0.82fr_0.82fr_1.08fr_1.28fr]"],
+#main-content [class*="bg-[#FBF7EC]"][class*="border-[#D4CCB8]"] [class*="grid-cols-[0.82fr_0.82fr_1.08fr_1.28fr]"] * {
+  font-family: inherit !important;
+  font-weight: 700 !important;
 }
 
 #main-content [class*="bg-[#FBF7EC]"][class*="border-[#D4CCB8]"] [class*="grid-cols-[0.82fr_0.82fr_1.08fr_1.28fr]"] > div > p:first-child,
 #main-content [class*="bg-[#FBF7EC]"][class*="border-[#D4CCB8]"] [class*="grid-cols-[0.82fr_0.82fr_1.08fr_1.28fr]"] > label > span:first-child {
-  font-size: 11px !important;
+  font-size: 8px !important;
   line-height: 1.05 !important;
-  letter-spacing: 0.04em !important;
+  letter-spacing: 0.06em !important;
 }
 
 #main-content [class*="bg-[#FBF7EC]"][class*="border-[#D4CCB8]"] [class*="grid-cols-[0.82fr_0.82fr_1.08fr_1.28fr]"] > div > p:nth-child(2) {
-  font-size: 16px !important;
+  font-size: 12px !important;
   line-height: 1.25 !important;
 }
 
-#main-content [class*="bg-[#FBF7EC]"][class*="border-[#D4CCB8]"] button {
-  font-size: 15px !important;
-  line-height: 1.2 !important;
+#main-content [class*="bg-[#FBF7EC]"][class*="border-[#D4CCB8]"] [class*="grid-cols-[0.82fr_0.82fr_1.08fr_1.28fr]"] > div:last-child > p:nth-child(2) {
+  font-size: 11px !important;
 }
 
-#main-content [class*="bg-[#FBF7EC]"][class*="border-[#D4CCB8]"] textarea,
-#main-content [class*="bg-[#FBF7EC]"][class*="border-[#D4CCB8]"] select,
-#main-content [class*="bg-[#FBF7EC]"][class*="border-[#D4CCB8]"] input {
-  font-size: 17px !important;
-  line-height: 1.55 !important;
+/* Displayed recipe sections use the normal BIXBO app face and normal app-sized
+   copy instead of the oversized handwritten recipe pass. */
+#main-content [class*="bg-[#FBF7EC]"][class*="border-[#D4CCB8]"] section,
+#main-content [class*="bg-[#FBF7EC]"][class*="border-[#D4CCB8]"] section * {
+  font-family: inherit !important;
 }
 
-#main-content [class*="bg-[#FBF7EC]"][class*="border-[#D4CCB8]"] input[class*="text-[30px]"] {
-  font-size: 42px !important;
-  line-height: 1 !important;
+#main-content [class*="bg-[#FBF7EC]"][class*="border-[#D4CCB8]"] section h3 {
+  font-size: 14px !important;
+  line-height: 1.25rem !important;
+  font-weight: 700 !important;
+  letter-spacing: normal !important;
+  text-transform: none !important;
+}
+
+#main-content [class*="bg-[#FBF7EC]"][class*="border-[#D4CCB8]"] section li,
+#main-content [class*="bg-[#FBF7EC]"][class*="border-[#D4CCB8]"] section > div > p {
+  font-size: 14px !important;
+  line-height: 1.5rem !important;
 }
 
 /* Replace the simplified pot component with a denser vintage line drawing that
