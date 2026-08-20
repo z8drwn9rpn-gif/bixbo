@@ -42,11 +42,13 @@ describe("cloud account ownership guard", () => {
     expect(storage.getItem(BIXBO_ACCOUNT_SWITCH_BACKUP_KEY)).toBeNull();
   });
 
-  it("backs up and clears only account-scoped BIXBO state on a real account switch", () => {
+  it("backs up and clears all account-scoped BIXBO state on a real account switch", () => {
     const storage = new MemoryStorage();
     storage.setItem(BIXBO_CLOUD_OWNER_KEY, "user-a");
     storage.setItem("bixbo:v2", "primary-diary");
     storage.setItem("bixbo:v1", "legacy-diary");
+    storage.setItem("bixbo:safety-backup:v1", "safety-backup");
+    storage.setItem("bixbo:health-preferences", "legacy-health-preferences");
     storage.setItem("bixbo:pending-cloud-sync", "1");
     storage.setItem("bixbo:last-cloud-sync-at", "yesterday");
     storage.setItem("bixbo:last-auto-backup-at", "yesterday");
@@ -59,6 +61,8 @@ describe("cloud account ownership guard", () => {
     expect(storage.getItem(BIXBO_CLOUD_OWNER_KEY)).toBe("user-b");
     expect(storage.getItem("bixbo:v2")).toBeNull();
     expect(storage.getItem("bixbo:v1")).toBeNull();
+    expect(storage.getItem("bixbo:safety-backup:v1")).toBeNull();
+    expect(storage.getItem("bixbo:health-preferences")).toBeNull();
     expect(storage.getItem("bixbo:pending-cloud-sync")).toBeNull();
     expect(storage.getItem("bixbo:last-cloud-sync-at")).toBeNull();
     expect(storage.getItem("bixbo:last-auto-backup-at")).toBeNull();
@@ -77,5 +81,7 @@ describe("cloud account ownership guard", () => {
     expect(backup.toUserId).toBe("user-b");
     expect(backup.snapshots?.["bixbo:v2"]).toBe("primary-diary");
     expect(backup.snapshots?.["bixbo:v1"]).toBe("legacy-diary");
+    expect(backup.snapshots?.["bixbo:safety-backup:v1"]).toBe("safety-backup");
+    expect(backup.snapshots?.["bixbo:health-preferences"]).toBe("legacy-health-preferences");
   });
 });
