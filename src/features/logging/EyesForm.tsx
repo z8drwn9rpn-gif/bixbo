@@ -1,11 +1,12 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { BixboEyePainIcon } from "@/components/icons/BixboWellnessIcons";
 import { useI18n } from "@/hooks/useI18n";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { nowHHMM, updateDayLog, type DayLog } from "@/lib/storage";
-import { Chip, Field, SaveBar, toggleIn, type UpdateFn } from "./LogFormPrimitives";
+import { nowHHMM, updateDayLog, useBixbo, type DayLog } from "@/lib/storage";
+import { CustomChipList, Chip, Field, SaveBar, type UpdateFn } from "./LogFormPrimitives";
 
-export type EyesPainIntensity = "none" | "something" | "severe";
+export type EyesPainIntensity = "none" | "something" | "mild" | "moderate" | "severe";
 
 export interface EyesEpisode {
   id: string;
@@ -18,19 +19,30 @@ export interface EyesEpisode {
 }
 
 type DayLogWithEyes = DayLog & { eyes?: EyesEpisode[] };
+type EyesSettingsExtension = { eyesVisionChanges?: string[] };
 
-const VISION_CHANGES = [
+export const EYES_VISION_CHANGES = [
   "Blurred vision",
   "Dim vision",
   "Colors less vivid",
   "Visual field change",
 ] as const;
 
-const PAIN_INTENSITY_OPTIONS: Array<{ value: EyesPainIntensity; label: string; face: string }> = [
-  { value: "none", label: "No pain", face: "☺" },
-  { value: "something", label: "Feeling something there", face: "◉" },
-  { value: "severe", label: "Severe pain", face: "☹" },
+export const EYES_PAIN_INTENSITY_OPTIONS: Array<{
+  value: EyesPainIntensity;
+  label: string;
+  level: 0 | 1 | 2 | 3 | 4;
+}> = [
+  { value: "none", label: "No pain", level: 0 },
+  { value: "something", label: "Feeling something there", level: 1 },
+  { value: "mild", label: "Mild pain", level: 2 },
+  { value: "moderate", label: "Moderate pain", level: 3 },
+  { value: "severe", label: "Severe pain", level: 4 },
 ];
+
+export function eyesPainIntensityLabel(intensity: EyesPainIntensity | undefined): string {
+  return EYES_PAIN_INTENSITY_OPTIONS.find((option) => option.value === intensity)?.label ?? "No pain";
+}
 
 export function EyesForm({
   date,
@@ -48,6 +60,7 @@ export function EyesForm({
   onDraftChange?: (entry: EyesEpisode) => void;
 }) {
   const { t } = useI18n();
+  const { data } = useBixbo();
   const [time, setTime] = useState(initialEntry?.time ?? nowHHMM());
   const [affected, setAffected] = useState<EyesEpisode["affected"]>(initialEntry?.affected ?? "both");
   const [painIntensity, setPainIntensity] = useState<EyesPainIntensity>(initialEntry?.painIntensity ?? "none");
@@ -55,6 +68,24 @@ export function EyesForm({
   const [visionChanges, setVisionChanges] = useState<string[]>(initialEntry?.visionChanges ?? []);
   const [note, setNote] = useState(initialEntry?.note ?? "");
   const draftId = useRef(initialEntry?.id ?? crypto.randomUUID()).current;
+
+  const eyesSettings = data.settings as typeof data.settings & EyesSettingsExtension;
+  const customVisionChanges = (eyesSettings.eyesVisionChanges ?? []).filter(
+    (value) => !EYES_VISION_CHANGES.includes(value as (typeof EYES_VISION_CHANGES)[number]),
+  );
+
+  const setCustomVisionChanges = (next: string[]) => {
+    const unique = [...new Set(next.map((value) => value.trim()).filter(Boolean))].filter(
+      (value) => !EYES_VISION_CHANGES.includes(value as (typeof EYES_VISION_CHANGES)[number]),
+    );
+    update((current) => ({
+      ...current,
+      settings: {
+        ...current.settings,
+        eyesVisionChanges: unique,
+      } as typeof current.settings,
+    }));
+  };
 
   const draft = useMemo<EyesEpisode>(
     () => ({
@@ -113,8 +144,8 @@ export function EyesForm({
 
         <Field label="Pain intensity">
           <p className="mt-1 text-xs text-muted-foreground">{t("How intense is the pain?")}</p>
-          <div className="mt-2 grid grid-cols-3 gap-2">
-            {PAIN_INTENSITY_OPTIONS.map((option) => {
+          <div className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-5">
+            {EYES_PAIN_INTENSITY_OPTIONS.map((option) => {
               const active = painIntensity === option.value;
               return (
                 <button
@@ -124,11 +155,13 @@ export function EyesForm({
                   aria-pressed={active}
                   className={`min-h-[104px] rounded-2xl border px-2 py-3 text-center transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
                     active
-                      ? "border-primary/35 bg-primary/10 text-foreground"
+                      ? "border-primary/35 bg-primary/10 text-foreground shadow-sm"
                       : "border-border bg-surface text-foreground hover:bg-tint"
                   }`}
                 >
-                  <span className="block text-2xl leading-none text-primary" aria-hidden="true">{option.face}</span>
+                  <span className="mx-auto grid h-11 w-11 place-items-center" aria-hidden="true">
+                    <BixboEyePainIcon level={option.level} size={44} />
+                  </span>
                   <span className="mt-2 block text-xs font-semibold leading-tight">{t(option.label)}</span>
                 </button>
               );
@@ -149,17 +182,23 @@ export function EyesForm({
         </Field>
 
         <Field label="Vision changes">
-          <div className="mt-2 flex flex-wrap gap-2">
-            {VISION_CHANGES.map((value) => (
-              <Chip
-                key={value}
-                active={visionChanges.includes(value)}
-                onClick={() => setVisionChanges((current) => toggleIn(current, value))}
-              >
-                {t(value)}
-              </Chip>
+          <CustomChipList
+            base={[...EYES_VISION_CHANGES]}
+            custom={customVisionChanges}
+            onAddCustom={(value) => setCustomVisionChanges([...customVisionChanges, value])}
+            onRemoveCustom={(value) => {
+              setCustomVisionChanges(customVisionChanges.filter((item) => item !== value));
+              setVisionChanges((current) => current.filter((item) => item !== value));
+            }}
+            onRenameCustom={(oldValue, newValue) => {
+              setCustomVisionChanges(customVisionChanges.map((item) => (item === oldValue ? newValue : item)));
+              setVisionChanges((current) => current.map((item) => (item === oldValue ? newValue : item)));
+            }}
+            selected={visionChanges}
+            onToggle={(value) => setVisionChanges((current) => (
+              current.includes(value) ? current.filter((item) => item !== value) : [...current, value]
             ))}
-          </div>
+          />
         </Field>
 
         <Field label="Note (optional)">

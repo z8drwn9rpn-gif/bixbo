@@ -100,6 +100,29 @@
   margin: 0;
 }
 
+/* Body Battery is a BIXBO-owned meter. The legacy helper text used platform
+   emoji (sleepy/sad/neutral/happy/lightning), which rendered as Apple artwork
+   on iOS. Keep the five-level battery graphic and remove those platform glyphs.
+   The meter gets the same soft sage surface and olive outline as BIXBO icons. */
+[data-bixbo-log-surface="pain"] button:has(> div.grid.h-10.w-6.place-items-end.rounded-md) > div.grid.h-10.w-6.place-items-end.rounded-md {
+  width: 28px !important;
+  height: 42px !important;
+  padding: 3px !important;
+  border-color: #65783e !important;
+  border-radius: 9px !important;
+  background: #f4f5ec !important;
+  box-shadow: 0 2px 7px rgb(38 51 24 / 0.12);
+}
+
+[data-bixbo-log-surface="pain"] button:has(> div.grid.h-10.w-6.place-items-end.rounded-md) > div.grid.h-10.w-6.place-items-end.rounded-md > div {
+  border-radius: 4px !important;
+  filter: saturate(0.72) brightness(1.02);
+}
+
+[data-bixbo-log-surface="pain"] button:has(> div.grid.h-10.w-6.place-items-end.rounded-md) > span.text-\[10px\] {
+  display: none !important;
+}
+
 /* Month Summary keeps its dim layer but never applies a backdrop filter. */
 [data-bixbo-overlay-backdrop="month-summary"] {
   -webkit-backdrop-filter: none !important;

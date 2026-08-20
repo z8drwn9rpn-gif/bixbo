@@ -1,9 +1,15 @@
 import { useState } from "react";
+import { BixboEyeIcon, BixboEyePainIcon } from "@/components/icons/BixboWellnessIcons";
 import { ChevronLeft, X } from "@/components/icons/BixboExtraIcons";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { useI18n } from "@/hooks/useI18n";
 import { updateDayLog, type BixboData, type DayLog } from "@/lib/storage";
-import { EyesForm, type EyesEpisode, type EyesPainIntensity } from "@/features/logging/EyesForm";
+import {
+  EyesForm,
+  EYES_PAIN_INTENSITY_OPTIONS,
+  eyesPainIntensityLabel,
+  type EyesEpisode,
+} from "@/features/logging/EyesForm";
 import {
   DayOverviewCard as Card,
   DayOverviewDeleteButton as DeleteBtn,
@@ -17,10 +23,8 @@ function affectedEyeLabel(affected: EyesEpisode["affected"]): string {
   return "Both eyes";
 }
 
-function painIntensityLabel(intensity: EyesPainIntensity | undefined): string {
-  if (intensity === "severe") return "Severe pain";
-  if (intensity === "something") return "Feeling something there";
-  return "No pain";
+function painLevel(intensity: EyesEpisode["painIntensity"]): 0 | 1 | 2 | 3 | 4 {
+  return EYES_PAIN_INTENSITY_OPTIONS.find((option) => option.value === intensity)?.level ?? 0;
 }
 
 export function DayOverviewEyesCard({
@@ -39,18 +43,22 @@ export function DayOverviewEyesCard({
   return (
     <>
       {entries.length ? (
-        <Card title="Eyes" icon="👁️">
+        <Card title="Eyes" icon={<BixboEyeIcon size={24} />}>
           <ul className="space-y-3">
             {entries.map((entry, index) => (
               <li key={entry.id} className={`flex items-start gap-2 ${index ? "border-t border-border/60 pt-3" : ""}`}>
                 <button type="button" onClick={() => setEditing(entry)} className="min-w-0 flex-1 text-left">
-                  <p className="text-xs text-muted-foreground">
-                    {entry.time} · {t(affectedEyeLabel(entry.affected))}
+                  <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                    <BixboEyeIcon size={17} />
+                    <span>{entry.time} · {t(affectedEyeLabel(entry.affected))}</span>
                   </p>
                   <div className="my-2 border-t border-border/60" />
-                  <p className="text-xs leading-relaxed text-muted-foreground">
-                    <span className="font-semibold text-foreground">{t("Pain intensity")}:</span>{" "}
-                    {t(painIntensityLabel(entry.painIntensity))}
+                  <p className="flex items-center gap-1.5 text-xs leading-relaxed text-muted-foreground">
+                    <BixboEyePainIcon level={painLevel(entry.painIntensity)} size={18} />
+                    <span>
+                      <span className="font-semibold text-foreground">{t("Pain intensity")}:</span>{" "}
+                      {t(eyesPainIntensityLabel(entry.painIntensity))}
+                    </span>
                   </p>
                   <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
                     <span className="font-semibold text-foreground">{t("Pain with eye movement")}:</span>{" "}
@@ -95,7 +103,9 @@ export function DayOverviewEyesCard({
             <button type="button" onClick={() => setEditing(null)} className="inline-flex min-h-11 min-w-[76px] items-center gap-1 rounded-xl px-2 text-sm text-muted-foreground transition hover:bg-tint focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
               <ChevronLeft className="h-3.5 w-3.5 shrink-0" /> {t("Overview")}
             </button>
-            <SheetTitle className="pb-3 font-serif text-lg">{t("Pain")}</SheetTitle>
+            <SheetTitle className="flex items-center gap-1.5 pb-3 font-serif text-lg">
+              <BixboEyeIcon size={22} /> {t("Eyes")}
+            </SheetTitle>
             <button type="button" onClick={() => setEditing(null)} aria-label={t("Close")} className="grid h-11 w-11 place-items-center rounded-full transition hover:bg-tint focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
               <X className="h-5 w-5" />
             </button>
@@ -103,7 +113,9 @@ export function DayOverviewEyesCard({
           {editing ? (
             <div className="min-h-0 flex-1 overflow-y-auto px-5 pb-[calc(24px+env(safe-area-inset-bottom))] pt-4">
               <div className="mx-auto w-full max-w-xl rounded-2xl border border-border p-3">
-                <p className="mb-3 text-center text-xs font-semibold text-foreground/80">{t("Eyes")}</p>
+                <p className="mb-3 flex items-center justify-center gap-1.5 text-center text-xs font-semibold text-foreground/80">
+                  <BixboEyeIcon size={18} /> {t("Eyes")}
+                </p>
                 <EyesForm
                   key={editing.id}
                   date={date}

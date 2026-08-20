@@ -50,12 +50,12 @@ export function DayOverviewCard({
   compact = false,
 }: {
   title: string;
-  icon: string;
+  icon: string | ReactNode;
   children: ReactNode;
   compact?: boolean;
 }) {
   const { t } = useI18n();
-  const resolvedIcon = icon === "🫯" ? "✨" : icon;
+  const resolvedIcon = typeof icon === "string" && icon === "🫯" ? "✨" : icon;
   const foodValueAlignment =
     title === "Food"
       ? "[&_li>button>div+p]:flex [&_li>button>div+p]:min-w-0 [&_li>button>div+p]:items-start [&_li>button>div+p]:gap-1 [&_li>button>div+p>span:first-child]:shrink-0 [&_li>button>div+p>svg]:shrink-0 [&_li>button>div+p>span:last-child]:min-w-0 [&_li>button>div+p>span:last-child]:flex-1"
@@ -66,7 +66,7 @@ export function DayOverviewCard({
       className={`rounded-3xl border border-border/70 bg-surface shadow-sm ring-1 ring-border ${compact ? "px-4 py-3" : "p-4"} ${foodValueAlignment}`}
     >
       <div className={`${compact ? "mb-1" : "mb-2"} flex items-center gap-2`}>
-        <Ico e={resolvedIcon} size={22} />
+        {typeof resolvedIcon === "string" ? <Ico e={resolvedIcon} size={22} /> : resolvedIcon}
         <h3 className="font-serif text-lg font-semibold">{t(title)}</h3>
       </div>
       {children}
