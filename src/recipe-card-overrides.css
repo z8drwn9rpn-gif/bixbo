@@ -1,0 +1,78 @@
+/* Recipe-card fidelity fixes based on the approved reference screenshots.
+   Keep the enlarged handwritten body copy from the previous pass, but restore
+   the original title + metadata sizing and use a closer vintage stock-pot. */
+
+/* The Recipes tab is the second segment. When it is active, the recipe surface
+   owns the full viewport and the global BottomNav should not be painted. */
+body:has(#main-content div[class*="max-w-[560px]"][class*="grid-cols-2"] > button:nth-child(2)[class*="bg-surface"]) [data-bixbo-bottom-nav] {
+  display: none !important;
+  pointer-events: none !important;
+}
+
+/* Restore the recipe title to the size used before the last enlargement. */
+html body #main-content [class*="bg-[#FBF7EC]"][class*="border-[#D4CCB8]"] h2 {
+  font-size: 31px !important;
+  line-height: 1.05 !important;
+}
+
+@media (min-width: 640px) {
+  html body #main-content [class*="bg-[#FBF7EC]"][class*="border-[#D4CCB8]"] h2 {
+    font-size: 36px !important;
+  }
+}
+
+/* Edit screen: recipe-name field was 30px before the enlargement. */
+html body #main-content [class*="bg-[#FBF7EC]"][class*="border-[#D4CCB8]"] input[class*="text-[30px]"] {
+  font-size: 30px !important;
+  line-height: 1 !important;
+}
+
+/* Restore PREP / COOK / PORTIONS / CATEGORY labels and values only.
+   Ingredients, Method, notes and recipe actions keep their current larger size. */
+html body #main-content [class*="bg-[#FBF7EC]"][class*="border-[#D4CCB8]"] [class*="grid-cols-[0.82fr_0.82fr_1.08fr_1.28fr]"] > div > p:first-child,
+html body #main-content [class*="bg-[#FBF7EC]"][class*="border-[#D4CCB8]"] [class*="grid-cols-[0.82fr_0.82fr_1.08fr_1.28fr]"] > label > span:first-child {
+  font-size: 8px !important;
+  line-height: 1.1 !important;
+  letter-spacing: 0.06em !important;
+}
+
+html body #main-content [class*="bg-[#FBF7EC]"][class*="border-[#D4CCB8]"] [class*="grid-cols-[0.82fr_0.82fr_1.08fr_1.28fr]"] > div > p:nth-child(2) {
+  font-size: 12px !important;
+  line-height: 1.25 !important;
+}
+
+html body #main-content [class*="bg-[#FBF7EC]"][class*="border-[#D4CCB8]"] [class*="grid-cols-[0.82fr_0.82fr_1.08fr_1.28fr]"] > div:last-child > p:nth-child(2) {
+  font-size: 11px !important;
+}
+
+html body #main-content [class*="bg-[#FBF7EC]"][class*="border-[#D4CCB8]"] [class*="grid-cols-[0.82fr_0.82fr_1.08fr_1.28fr]"] > div > p:nth-child(2) > span {
+  font-size: 9px !important;
+}
+
+/* Same original metadata sizes while editing. */
+html body #main-content [class*="bg-[#FBF7EC]"][class*="border-[#D4CCB8]"] [class*="grid-cols-[0.82fr_0.82fr_1.08fr_1.28fr]"] > label input {
+  font-size: 14px !important;
+  line-height: 1.25 !important;
+}
+
+html body #main-content [class*="bg-[#FBF7EC]"][class*="border-[#D4CCB8]"] [class*="grid-cols-[0.82fr_0.82fr_1.08fr_1.28fr]"] > label input[class*="w-12"] {
+  font-size: 11px !important;
+}
+
+html body #main-content [class*="bg-[#FBF7EC]"][class*="border-[#D4CCB8]"] [class*="grid-cols-[0.82fr_0.82fr_1.08fr_1.28fr]"] > label select {
+  font-size: 11px !important;
+  line-height: 1.25 !important;
+}
+
+/* Closer match to the supplied vintage pot: tall cylindrical body, broad domed
+   lid, rectangular top handle, loop side handles, dense hatching and the central
+   wavy highlight. The original component remains the layout anchor. */
+html body #main-content [class*="bg-[#FBF7EC]"][class*="border-[#D4CCB8]"] > svg.absolute {
+  width: 118px !important;
+  height: 92px !important;
+  right: 10px !important;
+  top: 8px !important;
+  opacity: 1 !important;
+  color: transparent !important;
+  background: center / contain no-repeat url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%20180%20140%22%3E%0A%3Cg%20fill%3D%22none%22%20stroke%3D%22%2374764b%22%20stroke-width%3D%222.15%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%0A%3Cpath%20d%3D%22M67%2029V19c0-7%205-11%2012-11h22c7%200%2012%204%2012%2011v10%22%2F%3E%0A%3Cpath%20d%3D%22M74%2028v-7c0-4%203-6%207-6h18c4%200%207%202%207%206v7%22%2F%3E%0A%3Cpath%20d%3D%22M37%2051c7-13%2028-23%2053-23s46%2010%2053%2023c-10%2012-29%2019-53%2019s-43-7-53-19Z%22%2F%3E%0A%3Cpath%20d%3D%22M38%2051h104%22%2F%3E%0A%3Cpath%20d%3D%22M44%2044c10-8%2027-13%2046-13s36%205%2046%2013%22%2F%3E%0A%3Cpath%20d%3D%22M49%2038c8-4%2018-7%2029-8M113%2031c7%201%2014%203%2020%206%22%2F%3E%0A%3Cpath%20d%3D%22M47%2049c11%207%2026%2011%2043%2011%2018%200%2033-4%2044-11%22%2F%3E%0A%3Cpath%20d%3D%22M43%2062v47c0%2014%2020%2024%2047%2024s47-10%2047-24V62%22%2F%3E%0A%3Cpath%20d%3D%22M44%2062c12%205%2028%208%2046%208s34-3%2046-8%22%2F%3E%0A%3Cpath%20d%3D%22M43%2068H27c-8%200-13%205-12%2012%201%207%207%2012%2015%2011l13-2%22%2F%3E%0A%3Cpath%20d%3D%22M137%2068h16c8%200%2013%205%2012%2012-1%207-7%2012-15%2011l-13-2%22%2F%3E%0A%3Cpath%20d%3D%22M48%20111c7%2010%2023%2016%2042%2016s35-6%2042-16%22%2F%3E%0A%3Cpath%20d%3D%22M52%2073v28M58%2072v39M64%2074v32M70%2072v41M76%2076v27%22%20opacity%3D%22.78%22%2F%3E%0A%3Cpath%20d%3D%22M104%2076v27M110%2072v41M116%2074v32M122%2072v39M128%2073v28%22%20opacity%3D%22.78%22%2F%3E%0A%3Cpath%20d%3D%22M89%2074c-8%208%207%2012%200%2020s8%2013%200%2022%22%2F%3E%0A%3Cpath%20d%3D%22M48%2078h6M48%2085h5M49%2094h7M126%2080h6M125%2087h7M126%2096h5%22%20opacity%3D%22.62%22%2F%3E%0A%3Cpath%20d%3D%22M61%2036c9-3%2018-4%2027-4M93%2035c13%200%2025%203%2034%208M48%2047c7-3%2014-5%2022-6M116%2044c7%201%2012%203%2017%206%22%20opacity%3D%22.58%22%2F%3E%0A%3Cpath%20d%3D%22M57%2056c11%204%2020%206%2031%206M98%2062c11-1%2021-4%2029-8%22%20opacity%3D%22.55%22%2F%3E%0A%3Cpath%20d%3D%22M33%2055c9%202%2018%203%2028%203M119%2058c10%200%2019-1%2028-3%22%20opacity%3D%22.45%22%2F%3E%0A%3Cpath%20d%3D%22M53%20104l7-2M66%20116l8-2M108%20116l8-2M120%20104l7-2%22%20opacity%3D%22.55%22%2F%3E%0A%3C%2Fg%3E%0A%3C%2Fsvg%3E") !important;
+}
