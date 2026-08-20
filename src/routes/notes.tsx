@@ -25,6 +25,7 @@ import {
 } from "@/components/icons/BixboIcons";
 import { NoteEditor } from "./notes-editor";
 import { RecipesView } from "@/features/notes/RecipesView";
+import { CoffeeView } from "@/features/notes/CoffeeView";
 import { useI18n } from "@/hooks/useI18n";
 import { sanitizeNoteHtml } from "@/features/notes/noteText";
 
@@ -41,7 +42,7 @@ export const Route = createFileRoute("/notes")({
 });
 
 type FolderIconComponent = (props: IconProps) => ReactElement;
-type NotesView = "all" | "recipes" | "folders" | "archived";
+type NotesView = "all" | "recipes" | "coffee" | "folders" | "archived";
 type NoteColor = NonNullable<Note["color"]>;
 type FolderIconKey = "note" | "health" | "idea" | "food";
 
@@ -324,6 +325,16 @@ function NotesPage() {
     }));
   }, [hydrated, data.folders, data.notebook, update]);
 
+  useEffect(() => {
+    const bottomNav = document.querySelector<HTMLElement>("[data-bixbo-bottom-nav]");
+    if (!bottomNav) return;
+    const hide = !openFolder && (screen === "recipes" || screen === "coffee");
+    bottomNav.style.display = hide ? "none" : "";
+    return () => {
+      bottomNav.style.display = "";
+    };
+  }, [openFolder, screen]);
+
   const createNote = (folderId = openFolder ?? "general") => {
     const note: Note = {
       id: crypto.randomUUID(),
@@ -376,7 +387,7 @@ function NotesPage() {
 
     return safeNotebook
       .filter((note) => {
-        if (note.kind === "recipe") return false;
+        if (note.kind === "recipe" || note.kind === "coffee") return false;
         if (screen === "archived") {
           if (!note.archived) return false;
         } else if (note.archived) {
@@ -460,14 +471,18 @@ function NotesPage() {
     </button>
   ) : screen === "recipes" ? (
     "Recipes"
+  ) : screen === "coffee" ? (
+    "Coffee"
   ) : (
     "Bixbo Note"
   );
 
+  const isCollectionScreen = screen === "recipes" || screen === "coffee";
+
   return (
     <AppShell
       title={title}
-      right={screen === "recipes" && !openFolder ? undefined : (
+      right={isCollectionScreen && !openFolder ? undefined : (
         <button
           type="button"
           onClick={() => createNote()}
@@ -478,8 +493,8 @@ function NotesPage() {
         </button>
       )}
     >
-      <div className="mx-auto w-full max-w-[980px] space-y-5 px-5 pt-3 pb-[calc(104px+env(safe-area-inset-bottom))] lg:px-0 lg:pb-12">
-        {screen !== "recipes" && (
+      <div className={`mx-auto w-full max-w-[980px] space-y-5 px-5 pt-3 lg:px-0 ${isCollectionScreen ? "pb-8 lg:pb-12" : "pb-[calc(104px+env(safe-area-inset-bottom))] lg:pb-12"}`}>
+        {!isCollectionScreen && (
           <div className="relative">
             <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <Input
@@ -503,12 +518,13 @@ function NotesPage() {
 
         {!openFolder && (
           <>
-            <div className="mx-auto grid w-full max-w-[560px] grid-cols-2 gap-1 rounded-full bg-tint p-1 ring-1 ring-border/60">
+            <div className="mx-auto grid w-full max-w-[620px] grid-cols-3 gap-1 rounded-full bg-tint p-1 ring-1 ring-border/60">
               {[
                 { key: "all" as const, label: "Notes" },
                 { key: "recipes" as const, label: "Recipes" },
+                { key: "coffee" as const, label: "Coffee" },
               ].map((item) => {
-                const active = item.key === "recipes" ? screen === "recipes" : screen !== "recipes";
+                const active = item.key === "all" ? !isCollectionScreen : screen === item.key;
                 return (
                   <button
                     key={item.key}
@@ -523,7 +539,7 @@ function NotesPage() {
                 );
               })}
             </div>
-            {screen !== "recipes" ? (
+            {!isCollectionScreen ? (
               <div className="flex justify-end gap-2">
                 <button type="button" onClick={() => setScreen("folders")} className={`rounded-full px-3 py-1.5 text-xs font-semibold ${screen === "folders" ? "bg-primary text-primary-foreground" : "bg-tint text-muted-foreground"}`}>{t("Folders")}</button>
                 <button type="button" onClick={() => setScreen("archived")} className={`rounded-full px-3 py-1.5 text-xs font-semibold ${screen === "archived" ? "bg-primary text-primary-foreground" : "bg-tint text-muted-foreground"}`}>{t("Archive")}</button>
@@ -534,6 +550,8 @@ function NotesPage() {
 
         {screen === "recipes" && !openFolder ? (
           <RecipesView data={view} update={update} />
+        ) : screen === "coffee" && !openFolder ? (
+          <CoffeeView data={view} update={update} />
         ) : screen === "folders" && !openFolder ? (
           <section>
             <div className="mb-3 flex items-center justify-between">
@@ -546,7 +564,7 @@ function NotesPage() {
 
             <div className="overflow-hidden rounded-3xl border border-border/70 bg-surface shadow-sm ring-1 ring-border/80">
               {safeFolders.map((folder, index) => {
-                const count = safeNotebook.filter((note) => note.kind !== "recipe" && note.folderId === folder.id && !note.archived).length;
+                const count = safeNotebook.filter((note) => note.kind !== "recipe" && note.kind !== "coffee" && note.folderId === folder.id && !note.archived).length;
 
                 return (
                   <div
