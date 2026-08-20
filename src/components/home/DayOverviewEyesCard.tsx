@@ -1,12 +1,11 @@
 import { useState } from "react";
-import { BixboEyeIcon, BixboEyePainIcon } from "@/components/icons/BixboWellnessIcons";
+import { BixboEyeIcon } from "@/components/icons/BixboWellnessIcons";
 import { ChevronLeft, X } from "@/components/icons/BixboExtraIcons";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { useI18n } from "@/hooks/useI18n";
 import { updateDayLog, type BixboData, type DayLog } from "@/lib/storage";
 import {
   EyesForm,
-  EYES_PAIN_INTENSITY_OPTIONS,
   eyesPainIntensityLabel,
   type EyesEpisode,
 } from "@/features/logging/EyesForm";
@@ -21,10 +20,6 @@ function affectedEyeLabel(affected: EyesEpisode["affected"]): string {
   if (affected === "left") return "Left eye";
   if (affected === "right") return "Right eye";
   return "Both eyes";
-}
-
-function painLevel(intensity: EyesEpisode["painIntensity"]): 0 | 1 | 2 | 3 | 4 {
-  return EYES_PAIN_INTENSITY_OPTIONS.find((option) => option.value === intensity)?.level ?? 0;
 }
 
 export function DayOverviewEyesCard({
@@ -48,17 +43,13 @@ export function DayOverviewEyesCard({
             {entries.map((entry, index) => (
               <li key={entry.id} className={`flex items-start gap-2 ${index ? "border-t border-border/60 pt-3" : ""}`}>
                 <button type="button" onClick={() => setEditing(entry)} className="min-w-0 flex-1 text-left">
-                  <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                    <BixboEyeIcon size={17} />
-                    <span>{entry.time} · {t(affectedEyeLabel(entry.affected))}</span>
+                  <p className="text-xs text-muted-foreground">
+                    {entry.time} · {t(affectedEyeLabel(entry.affected))}
                   </p>
                   <div className="my-2 border-t border-border/60" />
-                  <p className="flex items-center gap-1.5 text-xs leading-relaxed text-muted-foreground">
-                    <BixboEyePainIcon level={painLevel(entry.painIntensity)} size={18} />
-                    <span>
-                      <span className="font-semibold text-foreground">{t("Pain intensity")}:</span>{" "}
-                      {t(eyesPainIntensityLabel(entry.painIntensity))}
-                    </span>
+                  <p className="text-xs leading-relaxed text-muted-foreground">
+                    <span className="font-semibold text-foreground">{t("Pain intensity")}:</span>{" "}
+                    {t(eyesPainIntensityLabel(entry.painIntensity))}
                   </p>
                   <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
                     <span className="font-semibold text-foreground">{t("Pain with eye movement")}:</span>{" "}
