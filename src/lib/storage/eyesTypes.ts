@@ -1,6 +1,6 @@
 import type {} from "./types";
 
-export type EyesStoredPainIntensity = "none" | "something" | "severe";
+export type EyesStoredPainIntensity = "none" | "something" | "mild" | "moderate" | "severe";
 
 export interface EyesStoredEpisode {
   id: string;
