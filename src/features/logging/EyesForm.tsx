@@ -14,6 +14,7 @@ export interface EyesEpisode {
   affected: "left" | "right" | "both";
   painIntensity?: EyesPainIntensity;
   painWithMovement: boolean;
+  sensitivity?: string[];
   visionChanges: string[];
   note?: string;
 }
@@ -26,6 +27,15 @@ export const EYES_VISION_CHANGES = [
   "Dim vision",
   "Colors less vivid",
   "Visual field change",
+] as const;
+
+export const EYES_SENSITIVITY_OPTIONS = [
+  { value: "Sensitive to light", icon: "☀" },
+  { value: "Screen hurts", icon: "▣" },
+  { value: "More watery eyes", icon: "◉" },
+  { value: "Feel strain", icon: "≈" },
+  { value: "Twitching / tetany feeling", icon: "⚡" },
+  { value: "Other", icon: "…" },
 ] as const;
 
 export const EYES_PAIN_INTENSITY_OPTIONS: Array<{
@@ -65,6 +75,7 @@ export function EyesForm({
   const [affected, setAffected] = useState<EyesEpisode["affected"]>(initialEntry?.affected ?? "both");
   const [painIntensity, setPainIntensity] = useState<EyesPainIntensity>(initialEntry?.painIntensity ?? "none");
   const [painWithMovement, setPainWithMovement] = useState(initialEntry?.painWithMovement ?? false);
+  const [sensitivity, setSensitivity] = useState<string[]>(initialEntry?.sensitivity ?? []);
   const [visionChanges, setVisionChanges] = useState<string[]>(initialEntry?.visionChanges ?? []);
   const [note, setNote] = useState(initialEntry?.note ?? "");
   const draftId = useRef(initialEntry?.id ?? crypto.randomUUID()).current;
@@ -94,10 +105,11 @@ export function EyesForm({
       affected,
       painIntensity,
       painWithMovement,
+      sensitivity,
       visionChanges,
       note: note.trim() || undefined,
     }),
-    [affected, draftId, note, painIntensity, painWithMovement, time, visionChanges],
+    [affected, draftId, note, painIntensity, painWithMovement, sensitivity, time, visionChanges],
   );
 
   useEffect(() => {
@@ -116,6 +128,12 @@ export function EyesForm({
       };
     });
     onDone();
+  };
+
+  const toggleSensitivity = (value: string) => {
+    setSensitivity((current) => (
+      current.includes(value) ? current.filter((item) => item !== value) : [...current, value]
+    ));
   };
 
   return (
@@ -144,7 +162,7 @@ export function EyesForm({
 
         <Field label="Pain intensity">
           <p className="mt-1 text-xs text-muted-foreground">{t("How intense is the pain?")}</p>
-          <div className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-5">
+          <div className="mt-2 grid grid-cols-5 gap-1.5">
             {EYES_PAIN_INTENSITY_OPTIONS.map((option) => {
               const active = painIntensity === option.value;
               return (
@@ -153,16 +171,41 @@ export function EyesForm({
                   type="button"
                   onClick={() => setPainIntensity(option.value)}
                   aria-pressed={active}
-                  className={`min-h-[104px] rounded-2xl border px-2 py-3 text-center transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
+                  className={`min-h-[86px] rounded-2xl border px-1 py-2 text-center transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
                     active
                       ? "border-primary/35 bg-primary/10 text-foreground shadow-sm"
                       : "border-border bg-surface text-foreground hover:bg-tint"
                   }`}
                 >
-                  <span className="mx-auto grid h-11 w-11 place-items-center" aria-hidden="true">
-                    <BixboEyePainIcon level={option.level} size={44} />
+                  <span className="mx-auto grid h-8 w-8 place-items-center" aria-hidden="true">
+                    <BixboEyePainIcon level={option.level} size={32} />
                   </span>
-                  <span className="mt-2 block text-xs font-semibold leading-tight">{t(option.label)}</span>
+                  <span className="mt-1.5 block text-[10px] font-semibold leading-[1.08]">{t(option.label)}</span>
+                </button>
+              );
+            })}
+          </div>
+        </Field>
+
+        <Field label="Eye sensitivity / tetany episode">
+          <p className="mt-1 text-xs text-muted-foreground">{t("Are your eyes more sensitive than usual?")}</p>
+          <div className="mt-2 grid grid-cols-3 gap-2">
+            {EYES_SENSITIVITY_OPTIONS.map((option) => {
+              const active = sensitivity.includes(option.value);
+              return (
+                <button
+                  key={option.value}
+                  type="button"
+                  onClick={() => toggleSensitivity(option.value)}
+                  aria-pressed={active}
+                  className={`min-h-[92px] rounded-2xl border px-2 py-2.5 text-center transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
+                    active
+                      ? "border-primary/40 bg-primary/10 text-foreground shadow-sm"
+                      : "border-border bg-surface text-foreground hover:bg-tint"
+                  }`}
+                >
+                  <span className="block text-2xl leading-none text-primary" aria-hidden="true">{option.icon}</span>
+                  <span className="mt-2 block text-[11px] font-semibold leading-tight">{t(option.value)}</span>
                 </button>
               );
             })}
@@ -192,7 +235,7 @@ export function EyesForm({
             }}
             onRenameCustom={(oldValue, newValue) => {
               setCustomVisionChanges(customVisionChanges.map((item) => (item === oldValue ? newValue : item)));
-              setVisionChanges((current) => current.map((item) => (item === oldValue ? newValue : item)));
+              setVisionChanges((current) => current.map((item) => (item === oldValue ? newValue : item));
             }}
             selected={visionChanges}
             onToggle={(value) => setVisionChanges((current) => (
