@@ -1,7 +1,12 @@
 export const BIXBO_CLOUD_OWNER_KEY = "bixbo:cloud-owner-user-id:v1";
 export const BIXBO_ACCOUNT_SWITCH_BACKUP_KEY = "bixbo:account-switch-backup:v1";
 
-const BIXBO_DATA_KEYS = ["bixbo:v2", "bixbo:v1"] as const;
+const ACCOUNT_SCOPED_DATA_KEYS = [
+  "bixbo:v2",
+  "bixbo:v1",
+  "bixbo:safety-backup:v1",
+  "bixbo:health-preferences",
+] as const;
 const ACCOUNT_SCOPED_CACHE_KEYS = [
   "bixbo:pending-cloud-sync",
   "bixbo:last-cloud-sync-at",
@@ -24,9 +29,10 @@ export type CloudAccountOwnershipResult = "bound" | "same" | "switched";
  * A BIXBO snapshot historically lived in one device-wide localStorage slot.
  * Without an owner marker, signing into a second Supabase account could merge
  * the first account's diary into the second account. On a real account switch
- * we preserve the raw local snapshot, clear only account-scoped BIXBO state,
- * mark the new install as fresh, and let cloud sync hydrate the new account.
- * Auth/session storage and device-wide consent/theme state are untouched.
+ * we preserve the raw account-scoped snapshots, clear only account-scoped
+ * BIXBO state, mark the new install as fresh, and let cloud sync hydrate the
+ * new account. Auth/session storage and device-wide consent/theme state are
+ * deliberately untouched.
  */
 export function guardCloudAccountOwnership(
   nextUserId: string,
@@ -44,7 +50,7 @@ export function guardCloudAccountOwnership(
   if (previous === next) return "same";
 
   const snapshots: Record<string, string> = {};
-  for (const key of BIXBO_DATA_KEYS) {
+  for (const key of ACCOUNT_SCOPED_DATA_KEYS) {
     const raw = storage.getItem(key);
     if (raw != null) snapshots[key] = raw;
   }
@@ -65,7 +71,7 @@ export function guardCloudAccountOwnership(
     }
   }
 
-  for (const key of BIXBO_DATA_KEYS) storage.removeItem(key);
+  for (const key of ACCOUNT_SCOPED_DATA_KEYS) storage.removeItem(key);
   for (const key of ACCOUNT_SCOPED_CACHE_KEYS) storage.removeItem(key);
 
   // A different account must hydrate from its cloud copy rather than treating
