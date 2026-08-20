@@ -2,9 +2,10 @@
    Keep the enlarged handwritten body copy from the previous pass, but restore
    the original title + metadata sizing and use a closer vintage stock-pot. */
 
-/* The Recipes tab is the second segment. When it is active, the recipe surface
-   owns the full viewport and the global BottomNav should not be painted. */
-body:has(#main-content div[class*="max-w-[560px]"][class*="grid-cols-2"] > button:nth-child(2)[class*="bg-surface"]) [data-bixbo-bottom-nav] {
+/* Recipes and Coffee own the full collection viewport, so the global BottomNav
+   is hidden whenever either dedicated segment is active. */
+body:has(#main-content div[class*="max-w-[620px]"][class*="grid-cols-3"] > button:nth-child(2)[class*="bg-surface"]) [data-bixbo-bottom-nav],
+body:has(#main-content div[class*="max-w-[620px]"][class*="grid-cols-3"] > button:nth-child(3)[class*="bg-surface"]) [data-bixbo-bottom-nav] {
   display: none !important;
   pointer-events: none !important;
 }
