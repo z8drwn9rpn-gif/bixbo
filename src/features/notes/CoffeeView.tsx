@@ -104,14 +104,15 @@ function CoffeeCupSketch({ className = "" }: { className?: string }) {
   return (
     <svg viewBox="0 0 108 82" className={className} fill="none" aria-hidden="true">
       <g stroke="currentColor" strokeLinecap="round" strokeLinejoin="round">
-        <ellipse cx="48" cy="29" rx="34" ry="14" strokeWidth="1.6" />
-        <ellipse cx="48" cy="29" rx="28" ry="10" strokeWidth="1.1" opacity=".65" />
-        <path d="M15 29c1 21 7 38 33 41 25-3 31-20 33-41" strokeWidth="1.7" />
-        <path d="M80 34c14-4 22 1 20 11-2 10-11 15-22 12" strokeWidth="1.7" />
-        <path d="M84 39c8-2 12 1 11 6-1 5-6 8-12 7" strokeWidth="1.2" />
-        <path d="M31 27c5-7 12-7 17 0 5-7 12-7 17 0-4 2-7 5-9 9-2-3-5-5-8-7-3 2-6 4-8 7-2-4-5-7-9-9Z" strokeWidth="1.1" opacity=".75" />
-        <path d="M27 44c3 8 8 13 15 16M69 43c-3 9-8 14-15 17M23 50c2 4 5 8 9 11" strokeWidth=".9" opacity=".38" />
-        <path d="M17 72h64" strokeWidth="1" opacity=".45" />
+        <path d="M36 18c-5-5 4-8 0-13M51 17c-5-5 4-8 0-13M66 18c-5-5 4-8 0-13" strokeWidth="1.35" opacity=".62" />
+        <ellipse cx="48" cy="30" rx="29" ry="7.5" strokeWidth="1.7" />
+        <ellipse cx="48" cy="30" rx="24" ry="5.2" strokeWidth="1" opacity=".58" />
+        <path d="M19 30v17c0 14 10 22 29 22s29-8 29-22V30" strokeWidth="1.8" />
+        <path d="M77 36h7c12 0 15 18 1 21h-9" strokeWidth="1.8" />
+        <path d="M80 41h4c6 0 8 9 1 11h-7" strokeWidth="1.1" opacity=".72" />
+        <path d="M38 30c3-4 7-4 10 0 3-4 7-4 10 0-2 1-4 3-5 5-1-2-3-3-5-4-2 1-4 2-5 4-1-2-3-4-5-5Z" strokeWidth="1" opacity=".72" />
+        <path d="M12 71c10 6 62 6 73 0" strokeWidth="1.25" opacity=".55" />
+        <path d="M20 73h57" strokeWidth=".9" opacity=".32" />
       </g>
     </svg>
   );
