@@ -235,7 +235,7 @@ export function EyesForm({
             }}
             onRenameCustom={(oldValue, newValue) => {
               setCustomVisionChanges(customVisionChanges.map((item) => (item === oldValue ? newValue : item)));
-              setVisionChanges((current) => current.map((item) => (item === oldValue ? newValue : item));
+              setVisionChanges((current) => current.map((item) => (item === oldValue ? newValue : item)));
             }}
             selected={visionChanges}
             onToggle={(value) => setVisionChanges((current) => (
