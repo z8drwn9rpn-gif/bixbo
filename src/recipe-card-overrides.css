@@ -28,7 +28,15 @@ html body #main-content [class*="bg-[#FBF7EC]"][class*="border-[#D4CCB8]"] input
 }
 
 /* Restore PREP / COOK / PORTIONS / CATEGORY labels and values only.
+   Keep this whole metadata strip bold while preserving the restored smaller sizes.
    Ingredients, Method, notes and recipe actions keep their current larger size. */
+html body #main-content [class*="bg-[#FBF7EC]"][class*="border-[#D4CCB8]"] [class*="grid-cols-[0.82fr_0.82fr_1.08fr_1.28fr]"] > div > p,
+html body #main-content [class*="bg-[#FBF7EC]"][class*="border-[#D4CCB8]"] [class*="grid-cols-[0.82fr_0.82fr_1.08fr_1.28fr]"] > label > span,
+html body #main-content [class*="bg-[#FBF7EC]"][class*="border-[#D4CCB8]"] [class*="grid-cols-[0.82fr_0.82fr_1.08fr_1.28fr]"] > label input,
+html body #main-content [class*="bg-[#FBF7EC]"][class*="border-[#D4CCB8]"] [class*="grid-cols-[0.82fr_0.82fr_1.08fr_1.28fr]"] > label select {
+  font-weight: 700 !important;
+}
+
 html body #main-content [class*="bg-[#FBF7EC]"][class*="border-[#D4CCB8]"] [class*="grid-cols-[0.82fr_0.82fr_1.08fr_1.28fr]"] > div > p:first-child,
 html body #main-content [class*="bg-[#FBF7EC]"][class*="border-[#D4CCB8]"] [class*="grid-cols-[0.82fr_0.82fr_1.08fr_1.28fr]"] > label > span:first-child {
   font-size: 8px !important;
@@ -47,6 +55,7 @@ html body #main-content [class*="bg-[#FBF7EC]"][class*="border-[#D4CCB8]"] [clas
 
 html body #main-content [class*="bg-[#FBF7EC]"][class*="border-[#D4CCB8]"] [class*="grid-cols-[0.82fr_0.82fr_1.08fr_1.28fr]"] > div > p:nth-child(2) > span {
   font-size: 9px !important;
+  font-weight: 700 !important;
 }
 
 /* Same original metadata sizes while editing. */
