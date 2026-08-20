@@ -8,6 +8,7 @@ export interface EyesStoredEpisode {
   affected: "left" | "right" | "both";
   painIntensity?: EyesStoredPainIntensity;
   painWithMovement: boolean;
+  sensitivity?: string[];
   visionChanges: string[];
   note?: string;
 }
