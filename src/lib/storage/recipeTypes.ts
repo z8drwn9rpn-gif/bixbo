@@ -28,8 +28,8 @@ export interface RecipeData {
 
 declare module "./types" {
   interface Note {
-    /** Recipes share the synced notebook store but render in their own Recipes view. */
-    kind?: "note" | "recipe";
+    /** Recipes and coffee cards share the synced notebook store but render in dedicated views. */
+    kind?: "note" | "recipe" | "coffee";
     recipe?: RecipeData;
   }
 }
