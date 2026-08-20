@@ -205,3 +205,77 @@ html[data-bixbo-log-form-open] [data-bixbo-bottom-nav] {
 #main-content [class*="bg-[#FBF7EC]"][class*="border-[#D4CCB8]"] * {
   font-family: "Snell Roundhand", "Segoe Script", "Bradley Hand", cursive !important;
 }
+
+/* Recipe paper reference pass: use the supplied card as the visual source of
+   truth. The ornate handwriting stays, but the whole card is scaled up so the
+   ingredient and method copy remains readable on an iPhone. */
+#main-content [class*="bg-[#FBF7EC]"][class*="border-[#D4CCB8]"] h2 {
+  font-size: clamp(42px, 11vw, 50px) !important;
+  line-height: 0.98 !important;
+  font-weight: 600 !important;
+  letter-spacing: -0.02em !important;
+}
+
+#main-content [class*="bg-[#FBF7EC]"][class*="border-[#D4CCB8]"] h3 {
+  font-size: 22px !important;
+  line-height: 1.15 !important;
+  font-weight: 600 !important;
+}
+
+#main-content [class*="bg-[#FBF7EC]"][class*="border-[#D4CCB8]"] li {
+  font-size: 17px !important;
+  line-height: 1.6 !important;
+}
+
+#main-content [class*="bg-[#FBF7EC]"][class*="border-[#D4CCB8]"] section > p,
+#main-content [class*="bg-[#FBF7EC]"][class*="border-[#D4CCB8]"] section > div > p {
+  font-size: 16px !important;
+  line-height: 1.55 !important;
+}
+
+#main-content [class*="bg-[#FBF7EC]"][class*="border-[#D4CCB8]"] [class*="grid-cols-[0.82fr_0.82fr_1.08fr_1.28fr]"] > div > p:first-child,
+#main-content [class*="bg-[#FBF7EC]"][class*="border-[#D4CCB8]"] [class*="grid-cols-[0.82fr_0.82fr_1.08fr_1.28fr]"] > label > span:first-child {
+  font-size: 11px !important;
+  line-height: 1.05 !important;
+  letter-spacing: 0.04em !important;
+}
+
+#main-content [class*="bg-[#FBF7EC]"][class*="border-[#D4CCB8]"] [class*="grid-cols-[0.82fr_0.82fr_1.08fr_1.28fr]"] > div > p:nth-child(2) {
+  font-size: 16px !important;
+  line-height: 1.25 !important;
+}
+
+#main-content [class*="bg-[#FBF7EC]"][class*="border-[#D4CCB8]"] button {
+  font-size: 15px !important;
+  line-height: 1.2 !important;
+}
+
+#main-content [class*="bg-[#FBF7EC]"][class*="border-[#D4CCB8]"] textarea,
+#main-content [class*="bg-[#FBF7EC]"][class*="border-[#D4CCB8]"] select,
+#main-content [class*="bg-[#FBF7EC]"][class*="border-[#D4CCB8]"] input {
+  font-size: 17px !important;
+  line-height: 1.55 !important;
+}
+
+#main-content [class*="bg-[#FBF7EC]"][class*="border-[#D4CCB8]"] input[class*="text-[30px]"] {
+  font-size: 42px !important;
+  line-height: 1 !important;
+}
+
+/* Replace the simplified pot component with a denser vintage line drawing that
+   matches the supplied reference: domed lid, top handle, loop handles, rounded
+   stock-pot body, hatching and a central wavy highlight. The source SVG remains
+   in the DOM for layout/accessibility; only its internal strokes are hidden. */
+#main-content [class*="bg-[#FBF7EC]"][class*="border-[#D4CCB8]"] > svg.absolute {
+  width: 118px !important;
+  height: 92px !important;
+  right: 10px !important;
+  top: 8px !important;
+  opacity: 1 !important;
+  color: transparent !important;
+  background: center / contain no-repeat url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 160 120'%3E%3Cg fill='none' stroke='%23717A45' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M61 21v-7c0-7 5-11 12-11h14c7 0 12 4 12 11v7M67 21v-5c0-4 3-7 7-7h12c4 0 7 3 7 7v5'/%3E%3Cpath d='M34 37c7-12 27-19 46-19s39 7 46 19c-9 11-27 17-46 17s-37-6-46-17Z'/%3E%3Cpath d='M35 37h90M42 31c12-6 27-9 38-9 13 0 26 3 37 9M104 25l9 5M112 28l8 4M47 27l-8 5M52 24l-8 3'/%3E%3Cpath d='M39 45v43c0 13 17 22 41 22s41-9 41-22V45M40 47c11 5 25 7 40 7s29-2 40-7'/%3E%3Cpath d='M39 52H25c-7 0-11 5-10 11 1 7 7 11 14 10l10-2M121 52h14c7 0 11 5 10 11-1 7-7 11-14 10l-10-2'/%3E%3Cpath d='M43 87c5 12 20 18 37 18s32-6 37-18'/%3E%3Cpath d='M49 58v30M54 57v36M60 58v32M67 56v37M94 56v37M101 58v32M107 57v36M112 58v30' opacity='.72'/%3E%3Cpath d='M76 61c-7 6 7 11 0 18s7 12 0 20'/%3E%3Cpath d='M46 63h6M46 69h5M109 64h6M108 71h6M47 78h5M109 80h5' opacity='.65'/%3E%3Cpath d='M70 30c5-2 13-3 20-2M91 34c8 0 15-2 21-4M49 37c8 4 20 7 31 7M83 44c12 0 23-3 31-7' opacity='.55'/%3E%3C/g%3E%3C/svg%3E") !important;
+}
+
+#main-content [class*="bg-[#FBF7EC]"][class*="border-[#D4CCB8]"] > svg.absolute > * {
+  display: none !important;
+}
