@@ -27,6 +27,13 @@ type MentalDayLog = DayLog & { mentalWellbeing?: MentalWellbeingEntry[] };
 type MentalPoint = { key: string; value: number; entry: MentalWellbeingEntry };
 type Bucket = { key: string; label: string; value: number | null; count: number };
 type ChoiceCount = { value: string; count: number };
+type ChoiceStat = {
+  raw: string;
+  label: string;
+  count: number;
+  average: number;
+  highest: number;
+};
 
 const MENTAL_SCALE_LABELS = [
   "None",
@@ -75,6 +82,24 @@ function mostCommonChoice(points: MentalPoint[], field: "states" | "factors"): C
   }, null);
 }
 
+function choiceStats(points: MentalPoint[], field: "states" | "factors"): ChoiceStat[] {
+  const values = new Map<string, number[]>();
+  points.forEach(({ entry }) => {
+    (entry[field] ?? []).forEach((choice) => {
+      const current = values.get(choice) ?? [];
+      current.push(entry.distress);
+      values.set(choice, current);
+    });
+  });
+  return Array.from(values.entries()).map(([raw, distressValues]) => ({
+    raw,
+    label: cleanChoiceLabel(raw),
+    count: distressValues.length,
+    average: distressValues.reduce((sum, value) => sum + value, 0) / distressValues.length,
+    highest: Math.max(...distressValues),
+  }));
+}
+
 function highDistressFactor(points: MentalPoint[]): (ChoiceCount & { percentage: number }) | null {
   const high = points.filter((point) => point.value >= 7);
   if (!high.length) return null;
@@ -92,7 +117,10 @@ function clusterText(period: Period, buckets: Bucket[]) {
   const width = period === "M" ? 5 : 3;
   let best: { start: number; end: number; score: number } | null = null;
   for (let start = 0; start < buckets.length; start++) {
-    const values = buckets.slice(start, Math.min(buckets.length, start + width)).map((bucket) => bucket.value).filter((value): value is number => value != null);
+    const values = buckets
+      .slice(start, Math.min(buckets.length, start + width))
+      .map((bucket) => bucket.value)
+      .filter((value): value is number => value != null);
     if (!values.length) continue;
     const score = values.reduce((sum, value) => sum + value, 0) / values.length;
     if (!best || score > best.score) best = { start, end: Math.min(buckets.length - 1, start + width - 1), score };
@@ -162,6 +190,17 @@ export function MentalDistressInsightsCard({ data }: { data: BixboData }) {
   const factor = highDistressFactor(points);
   const cluster = clusterText(period, buckets);
 
+  const stateStats = useMemo(
+    () => choiceStats(points, "states").sort((a, b) => b.count - a.count || b.average - a.average).slice(0, 5),
+    [points],
+  );
+  const factorStats = useMemo(
+    () => choiceStats(points, "factors").sort((a, b) => b.average - a.average || b.count - a.count).slice(0, 5),
+    [points],
+  );
+  const maxStateCount = Math.max(1, ...stateStats.map((item) => item.count));
+  const strongestFactor = factorStats.find((item) => item.count >= 2) ?? factorStats[0] ?? null;
+
   const previousAverage = useMemo(() => {
     const previousAnchor = shiftInsightPeriodAnchor(anchor, period, -1);
     const previousRange = rangeFor(period, previousAnchor);
@@ -173,6 +212,7 @@ export function MentalDistressInsightsCard({ data }: { data: BixboData }) {
   const trendPct = avg != null && previousAverage != null && previousAverage > 0
     ? Math.round(((avg - previousAverage) / previousAverage) * 100)
     : null;
+  const trendComparison = period === "W" ? "vs last week" : period === "M" ? "vs last month" : "vs last year";
 
   const activeBucket = active == null ? null : buckets[active] ?? null;
   const activeDetails: InsightTooltipDetails | null = activeBucket?.value != null ? (() => {
@@ -197,12 +237,19 @@ export function MentalDistressInsightsCard({ data }: { data: BixboData }) {
       : ["Jan", "Mar", "May", "Jul", "Sep", "Nov", "Dec"];
 
   return (
-    <section className="rounded-3xl bg-surface p-4 shadow-sm ring-1 ring-border/80" data-bixbo-mental-distress-card="true">
+    <section
+      className="rounded-3xl bg-surface p-4 shadow-sm ring-1 ring-border/80"
+      data-bixbo-mental-insights-card="true"
+      data-bixbo-mental-distress-card="true"
+    >
       <div className="flex items-center gap-2.5">
         <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-tint/55 ring-1 ring-border/50">
           <BrainIcon size={30} />
         </span>
-        <p className="text-xs uppercase tracking-wider text-muted-foreground" style={{ fontWeight: 700 }}>{t("Mental distress")}</p>
+        <div className="min-w-0">
+          <p className="text-xs uppercase tracking-wider text-muted-foreground" style={{ fontWeight: 700 }}>{t("Mental insights")}</p>
+          <p className="mt-0.5 text-[10px] text-muted-foreground">Mental wellbeing · 0–10 scale</p>
+        </div>
       </div>
 
       <DashboardPeriodControl
@@ -210,16 +257,26 @@ export function MentalDistressInsightsCard({ data }: { data: BixboData }) {
         onChange={setPeriod}
         anchor={anchor}
         onShift={(delta) => setAnchor((current) => shiftInsightPeriodAnchor(current, period, delta))}
-        ariaLabel="Mental distress period"
+        ariaLabel="Mental insights period"
       />
 
-      <div className="mt-3 flex items-baseline gap-2">
-        <span className="font-serif text-4xl leading-none text-foreground">{avg != null ? avg.toFixed(1) : "–"}</span>
-        <span className="whitespace-nowrap text-xs text-muted-foreground">avg · {points.length} {points.length === 1 ? "entry" : "entries"}</span>
+      <div className="mt-3 flex flex-wrap items-end justify-between gap-2">
+        <div className="flex items-baseline gap-2">
+          <span className="font-serif text-4xl leading-none text-foreground">{avg != null ? avg.toFixed(1) : "–"}</span>
+          <span className="whitespace-nowrap text-xs text-muted-foreground">avg · {points.length} {points.length === 1 ? "entry" : "entries"}</span>
+        </div>
+        {trendPct != null ? (
+          <span
+            className="rounded-xl bg-background/55 px-2.5 py-1 text-[10px] font-semibold ring-1 ring-border/60"
+            style={{ color: trendPct <= 0 ? "#76aa3e" : "#e04a5d" }}
+          >
+            {trendPct > 0 ? "↑ " : trendPct < 0 ? "↓ " : ""}{Math.abs(trendPct)}% {trendComparison}
+          </span>
+        ) : null}
       </div>
 
       <div className="mt-3 rounded-2xl bg-background/45 px-3 pb-2.5 pt-3 ring-1 ring-border/45">
-        <p className="text-[10px] text-muted-foreground">Mental distress (0–10)</p>
+        <p className="text-[10px] font-semibold text-foreground">Mental distress <span className="font-normal text-muted-foreground">(0–10)</span></p>
         <div className="mt-2 flex gap-2">
           <div className="flex h-[150px] w-5 flex-col justify-between text-right text-[10px] text-muted-foreground">
             {[10, 8, 6, 4, 2, 0].map((value) => <span key={value} className="leading-none tabular-nums">{value}</span>)}
@@ -251,6 +308,62 @@ export function MentalDistressInsightsCard({ data }: { data: BixboData }) {
         <p className="mt-1 text-right text-[10px] text-muted-foreground">{period === "Y" ? "Month" : period === "M" ? "Day of month" : "Day"}</p>
       </div>
 
+      <div className="mt-3 rounded-2xl bg-background/45 px-3 py-3 ring-1 ring-border/45" data-bixbo-mental-states-section="true">
+        <div className="mb-3 flex items-center justify-between gap-2">
+          <p className="text-[11px] font-semibold text-foreground">Mental states</p>
+          <p className="text-[9px] text-muted-foreground">Entries</p>
+        </div>
+        {stateStats.length ? (
+          <div className="space-y-2.5">
+            {stateStats.map((item) => (
+              <div key={item.raw} className="grid grid-cols-[minmax(96px,122px)_minmax(0,1fr)_26px] items-center gap-2">
+                <span className="truncate text-[10px] font-medium text-foreground">{item.label}</span>
+                <span className="relative h-4 overflow-visible rounded-md bg-tint/45">
+                  <span
+                    data-bixbo-chart-mark="bar"
+                    data-bixbo-chart-direction="horizontal"
+                    className="absolute inset-y-0 left-0 min-w-[6px]"
+                    style={{ width: `${Math.max(4, (item.count / maxStateCount) * 100)}%`, background: vividPainChartColor(item.average) }}
+                  />
+                </span>
+                <span className="text-right text-[10px] font-semibold tabular-nums text-foreground">{item.count}</span>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="grid min-h-[72px] place-items-center text-center text-xs text-muted-foreground">No mental states logged in this period.</div>
+        )}
+      </div>
+
+      <div className="mt-3 rounded-2xl bg-background/45 px-3 py-3 ring-1 ring-border/45" data-bixbo-distress-factor-section="true">
+        <div className="mb-3 flex items-center justify-between gap-2">
+          <p className="text-[11px] font-semibold text-foreground">Distress by factor <span className="font-normal text-muted-foreground">(avg 0–10)</span></p>
+          <p className="text-[9px] text-muted-foreground">Avg · n</p>
+        </div>
+        {factorStats.length ? (
+          <div className="space-y-2.5">
+            {factorStats.map((item) => (
+              <div key={item.raw} className="grid grid-cols-[minmax(96px,122px)_minmax(0,1fr)_30px_32px] items-center gap-1.5">
+                <span className="truncate text-[10px] font-medium text-foreground">{item.label}</span>
+                <span className="relative h-4 overflow-visible rounded-md bg-tint/45">
+                  <span
+                    data-bixbo-chart-mark="bar"
+                    data-bixbo-chart-direction="horizontal"
+                    className="absolute inset-y-0 left-0 min-w-[6px]"
+                    style={{ width: `${Math.max(4, item.average * 10)}%`, background: vividPainChartColor(item.average) }}
+                  />
+                </span>
+                <span className="text-right text-[10px] font-semibold tabular-nums" style={{ color: vividPainChartColor(item.average) }}>{item.average.toFixed(1)}</span>
+                <span className="text-right text-[9px] tabular-nums text-muted-foreground">n={item.count}</span>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="grid min-h-[72px] place-items-center text-center text-xs text-muted-foreground">No mental factors logged in this period.</div>
+        )}
+        <p className="mt-3 text-[9px] leading-snug text-muted-foreground">Associations in your logs, not causes.</p>
+      </div>
+
       <QuickInsights items={[
         {
           kind: "target",
@@ -264,8 +377,12 @@ export function MentalDistressInsightsCard({ data }: { data: BixboData }) {
         },
         {
           kind: "moon",
-          color: factor ? vividPainChartColor(7) : "#6ea83c",
-          text: factor ? `${cleanChoiceLabel(factor.value)} appeared in ${factor.percentage}% of high-distress logs` : "No high-distress factor pattern yet",
+          color: strongestFactor ? vividPainChartColor(strongestFactor.average) : factor ? vividPainChartColor(7) : "#6ea83c",
+          text: strongestFactor
+            ? `${strongestFactor.label} showed the highest average distress (${strongestFactor.average.toFixed(1)}/10, n=${strongestFactor.count})`
+            : factor
+              ? `${cleanChoiceLabel(factor.value)} appeared in ${factor.percentage}% of high-distress logs`
+              : "No factor pattern yet",
         },
       ]} />
 
@@ -275,7 +392,7 @@ export function MentalDistressInsightsCard({ data }: { data: BixboData }) {
         {
           label: "Trend",
           value: trendPct == null ? "—" : `${trendPct > 0 ? "↑ " : trendPct < 0 ? "↓ " : ""}${Math.abs(trendPct)}%`,
-          sub: period === "W" ? "vs last week" : period === "M" ? "vs last month" : "vs last year",
+          sub: trendComparison,
           kind: "trend",
           color: trendPct != null && trendPct <= 0 ? "#76aa3e" : "#f07c23",
         },
