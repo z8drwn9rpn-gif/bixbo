@@ -73,11 +73,13 @@ export function MentalWellbeingForm({
   data,
   update,
   onDone,
+  initialEntry,
 }: {
   date: string;
   data: BixboData;
   update: UpdateFn;
   onDone: () => void;
+  initialEntry?: MentalWellbeingEntry;
 }) {
   const { t } = useI18n();
   const savedEntries = ((data.dayLogs[date] as MentalDayLog | undefined)?.mentalWellbeing ?? []);
@@ -86,12 +88,12 @@ export function MentalWellbeingForm({
   const customFactors = mentalSettings.mentalWellbeingFactors ?? [];
 
   const [step, setStep] = useState<1 | 2>(1);
-  const [editingId, setEditingId] = useState<string | null>(null);
-  const [time, setTime] = useState(nowHHMM());
-  const [distress, setDistress] = useState(0);
-  const [states, setStates] = useState<string[]>([]);
-  const [factors, setFactors] = useState<string[]>([]);
-  const [note, setNote] = useState("");
+  const [editingId, setEditingId] = useState<string | null>(initialEntry?.id ?? null);
+  const [time, setTime] = useState(initialEntry?.time || nowHHMM());
+  const [distress, setDistress] = useState(initialEntry?.distress ?? 0);
+  const [states, setStates] = useState<string[]>(initialEntry?.states ?? []);
+  const [factors, setFactors] = useState<string[]>(initialEntry?.factors ?? []);
+  const [note, setNote] = useState(initialEntry?.note ?? "");
   const [scaleInfoOpen, setScaleInfoOpen] = useState(false);
   const swipeStartRef = useRef<{ x: number; y: number } | null>(null);
   const suppressSwipeClickRef = useRef(false);
