@@ -4,7 +4,7 @@
    network-first; cache is only a fallback when the network is unavailable. */
 
 const BIXBO_RUNTIME_CACHE_PREFIX = "bixbo-runtime-";
-const BIXBO_RUNTIME_CACHE = `${BIXBO_RUNTIME_CACHE_PREFIX}v2`;
+const BIXBO_RUNTIME_CACHE = `${BIXBO_RUNTIME_CACHE_PREFIX}v3`;
 const BIXBO_APP_SHELL = "/";
 const BIXBO_FIXED_ASSETS = [
   "/manifest.json",
@@ -15,6 +15,8 @@ const BIXBO_FIXED_ASSETS = [
   "/apple-launch-bixbo.png",
   "/bixbo-mascot-user.png",
   "/bixbo-coffee-cup.svg",
+  "/bixbo-vintage-coffee-cup.svg",
+  "/bixbo-vintage-recipe-pot.svg",
 ];
 
 function sameOriginUrl(value) {
@@ -60,100 +62,63 @@ function shellAssetUrls(html) {
   return [...urls];
 }
 
-async function precacheAppShell() {
-  const cache = await caches.open(BIXBO_RUNTIME_CACHE);
-
-  try {
-    const response = await fetch(BIXBO_APP_SHELL, { cache: "reload", credentials: "same-origin" });
-    if (response.ok) {
-      const html = await response.clone().text();
-      await cacheResponse(cache, BIXBO_APP_SHELL, response);
-
-      await Promise.allSettled(
-        shellAssetUrls(html).map(async (path) => {
-          try {
-            const assetResponse = await fetch(path, { cache: "reload", credentials: "same-origin" });
-            await cacheResponse(cache, path, assetResponse);
-          } catch {
-            // A non-critical image/chunk must not fail service-worker install.
-          }
-        }),
-      );
-    }
-  } catch {
-    // Keep an already valid older runtime cache if install happens offline.
-  }
-}
-
-async function cleanupOldRuntimeCaches() {
-  const current = await caches.open(BIXBO_RUNTIME_CACHE);
-  const hasCurrentShell = Boolean(await current.match(BIXBO_APP_SHELL));
-  if (!hasCurrentShell) return;
-
-  const names = await caches.keys();
-  await Promise.all(
-    names
-      .filter((name) => name.startsWith(BIXBO_RUNTIME_CACHE_PREFIX) && name !== BIXBO_RUNTIME_CACHE)
-      .map((name) => caches.delete(name)),
-  );
-}
-
-function navigationCacheKey(url) {
-  return `${url.origin}${url.pathname}`;
-}
-
-async function networkFirstNavigation(request, url) {
-  const cache = await caches.open(BIXBO_RUNTIME_CACHE);
-  try {
+async function refreshFixedAssets(cache, html) {
+  const assets = shellAssetUrls(html);
+  await Promise.allSettled(assets.map(async (asset) => {
+    const request = new Request(asset, { cache: "reload", credentials: "same-origin" });
     const response = await fetch(request);
-    if (response.ok && url.pathname !== "/auth") {
-      await cacheResponse(cache, navigationCacheKey(url), response);
-      if (url.pathname === "/") await cacheResponse(cache, BIXBO_APP_SHELL, response);
-    }
-    return response;
-  } catch (error) {
-    const exact = await caches.match(navigationCacheKey(url));
-    if (exact) return exact;
-    const shell = await caches.match(BIXBO_APP_SHELL);
-    if (shell) return shell;
-    throw error;
-  }
+    await cacheResponse(cache, request, response);
+  }));
 }
 
-async function networkFirstAsset(request) {
+async function networkFirst(request) {
   const cache = await caches.open(BIXBO_RUNTIME_CACHE);
   try {
     const response = await fetch(request);
     await cacheResponse(cache, request, response);
     return response;
-  } catch (error) {
-    const cached = await caches.match(request);
+  } catch {
+    const cached = await cache.match(request, { ignoreSearch: false });
     if (cached) return cached;
-    throw error;
+    if (request.mode === "navigate") {
+      const shell = await cache.match(BIXBO_APP_SHELL);
+      if (shell) return shell;
+    }
+    throw new Error("BIXBO offline resource unavailable");
   }
 }
 
 self.addEventListener("install", (event) => {
-  event.waitUntil(precacheAppShell().catch(() => undefined));
+  event.waitUntil((async () => {
+    const cache = await caches.open(BIXBO_RUNTIME_CACHE);
+    try {
+      const response = await fetch(new Request(BIXBO_APP_SHELL, { cache: "reload", credentials: "same-origin" }));
+      if (response.ok) {
+        await cacheResponse(cache, BIXBO_APP_SHELL, response);
+        await refreshFixedAssets(cache, await response.clone().text());
+      }
+    } catch {
+      // First install may happen offline; runtime requests will populate later.
+    }
+  })());
 });
 
 self.addEventListener("activate", (event) => {
-  event.waitUntil(cleanupOldRuntimeCaches().catch(() => undefined));
+  event.waitUntil((async () => {
+    const names = await caches.keys();
+    await Promise.all(names
+      .filter((name) => name.startsWith(BIXBO_RUNTIME_CACHE_PREFIX) && name !== BIXBO_RUNTIME_CACHE)
+      .map((name) => caches.delete(name)));
+  })());
 });
 
 self.addEventListener("fetch", (event) => {
   const request = event.request;
-  if (!request || request.method !== "GET") return;
-
+  if (request.method !== "GET") return;
   const url = sameOriginUrl(request.url);
   if (!url) return;
-
-  if (request.mode === "navigate") {
-    event.respondWith(networkFirstNavigation(request, url));
-    return;
-  }
-
-  if (runtimeAssetRequest(request, url)) {
-    event.respondWith(networkFirstAsset(request));
+  if (url.pathname.startsWith("/rest/") || url.pathname.startsWith("/auth/") || url.pathname.startsWith("/functions/")) return;
+  if (request.mode === "navigate" || runtimeAssetRequest(request, url)) {
+    event.respondWith(networkFirst(request));
   }
 });
