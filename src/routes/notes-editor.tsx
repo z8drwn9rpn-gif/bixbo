@@ -158,6 +158,7 @@ export function NoteEditor({
 
   return (
     <AppShell
+      hideBottomNav
       title={
         <button type="button" onClick={goBack} className="flex items-center gap-1 text-sm">
           <ChevronLeft className="h-5 w-5" />
@@ -186,7 +187,7 @@ export function NoteEditor({
       }
       stickyHeader={false}
     >
-      <div className="px-5 pt-3 pb-[calc(128px+env(safe-area-inset-bottom))]" style={{ overflowAnchor: "none" }}>
+      <div className="px-5 pt-3 pb-[calc(96px+env(safe-area-inset-bottom))]" style={{ overflowAnchor: "none" }}>
         <Input
           value={title}
           onChange={(event) => setTitle(event.target.value)}
@@ -258,7 +259,7 @@ export function NoteEditor({
           />
         </div>
 
-        <div className="sticky bottom-[calc(6.6rem+env(safe-area-inset-bottom))] z-20 mx-auto mt-3 flex w-fit items-center gap-1 rounded-2xl border border-border/70 bg-surface/95 p-1.5 shadow-md backdrop-blur-md">
+        <div className="sticky bottom-[calc(0.75rem+env(safe-area-inset-bottom))] z-20 mx-auto mt-3 flex w-fit items-center gap-1 rounded-2xl border border-border/70 bg-surface/95 p-1.5 shadow-md backdrop-blur-md">
           <button
             type="button"
             onPointerDown={(event) => event.preventDefault()}
