@@ -113,14 +113,16 @@ export function BlueberryDayOverviewFallback({
             className="relative max-h-[94dvh] w-full max-w-xl overflow-y-auto rounded-t-[2rem] bg-background shadow-2xl ring-1 ring-border sm:rounded-[2rem]"
             onClick={(event) => event.stopPropagation()}
           >
-            <button
-              type="button"
-              onClick={() => setEditingMental(null)}
-              aria-label={t("Close")}
-              className="absolute right-3 top-3 z-20 grid h-8 w-8 place-items-center rounded-full bg-tint text-foreground ring-1 ring-border"
-            >
-              <X className="h-4 w-4" />
-            </button>
+            <div className="sticky top-0 z-30 flex h-11 items-center justify-end rounded-t-[2rem] bg-background px-3 pt-1 sm:rounded-t-[2rem]">
+              <button
+                type="button"
+                onClick={() => setEditingMental(null)}
+                aria-label={t("Close")}
+                className="grid h-8 w-8 place-items-center rounded-full bg-tint text-foreground ring-1 ring-border"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
             <CustomLogForm
               key={editingMental.id}
               definition={mentalDefinition}
