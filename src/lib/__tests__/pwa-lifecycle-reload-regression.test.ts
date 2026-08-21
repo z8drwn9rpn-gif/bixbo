@@ -59,6 +59,9 @@ describe("iOS PWA reload and lifecycle hardening", () => {
     expect(guard).toContain('visibility(?:=| · )hidden');
     expect(guard).toContain('isBackgroundSuspendedNetworkIssue');
     expect(guard).toContain('POST_RESUME_SANITIZE_MS = 1_000');
+    expect(guard).toContain('STARTUP_SANITIZE_DELAYS_MS');
+    expect(guard).toContain('serviceWorkerBootstrap');
+    expect(guard).toContain('deployment · build');
     expect(guard).toContain('display=standalone-PWA');
     expect(guard).toContain('writeLocalJson(LEGACY_BOOT_HISTORY_KEY, [])');
 
@@ -66,6 +69,10 @@ describe("iOS PWA reload and lifecycle hardening", () => {
     expect(runtime).toContain('CLOUD_RECONCILE_INTERVAL_MS = 5 * 60_000');
     expect(runtime).toContain('NOTIFICATION_CHANGE_DEBOUNCE_MS = 15_000');
     expect(runtime).toContain('NOTIFICATION_SERVER_SYNC_MS = 5 * 60_000');
+    expect(runtime).toContain('NOTIFICATION_INTERACTION_QUIET_MS = 3_000');
+    expect(runtime).toContain('NOTIFICATION_RESUME_SYNC_DELAY_MS = 3_000');
+    expect(runtime).toContain('notificationSyncQuietPeriodRemaining');
+    expect(runtime).toContain('window.addEventListener("pointerdown", markInteraction, true)');
     expect(runtime).toContain('if (key === lastCloudSnapshotKey) continue');
     expect(runtime).toContain('if (reconcileInFlight) return reconcileInFlight');
   });
