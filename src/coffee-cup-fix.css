@@ -1,0 +1,9 @@
+/* Coffee cards use a dedicated BIXBO side-profile cup artwork.
+   The 108x82 viewBox is unique to CoffeeCupSketch in the app. */
+#main-content svg[viewBox="0 0 108 82"] {
+  background: url("/bixbo-coffee-cup.svg?v=20260821-cup1") center / contain no-repeat !important;
+}
+
+#main-content svg[viewBox="0 0 108 82"] > * {
+  display: none !important;
+}
