@@ -104,9 +104,6 @@ export function DayOverviewEyesCard({
           {editing ? (
             <div className="min-h-0 flex-1 overflow-y-auto px-5 pb-[calc(24px+env(safe-area-inset-bottom))] pt-4">
               <div className="mx-auto w-full max-w-xl rounded-2xl border border-border p-3">
-                <p className="mb-3 flex items-center justify-center gap-1.5 text-center text-xs font-semibold text-foreground/80">
-                  <BixboEyeIcon size={18} /> {t("Eyes")}
-                </p>
                 <EyesForm
                   key={editing.id}
                   date={date}
