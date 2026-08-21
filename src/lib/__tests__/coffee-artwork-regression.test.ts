@@ -23,7 +23,7 @@ describe("Vintage Recipes and Coffee artwork regression", () => {
     expect(pot).toContain('id="vintage-recipe-pot"');
     expect(pot).toContain('id="pot-botanical"');
 
-    expect(runtime).toContain('bixbo-runtime-${""}');
+    expect(runtime).toContain('const BIXBO_RUNTIME_CACHE_PREFIX = "bixbo-runtime-"');
     expect(runtime).toContain('BIXBO_RUNTIME_CACHE_PREFIX}v3');
     expect(runtime).toContain('/bixbo-vintage-coffee-cup.svg');
     expect(runtime).toContain('/bixbo-vintage-recipe-pot.svg');
