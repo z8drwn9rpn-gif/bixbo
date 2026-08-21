@@ -80,6 +80,13 @@ export function NoteEditor({
   }, [note.id]);
 
   useEffect(() => {
+    const editor = editorRef.current;
+    if (!editor) return;
+    const hasScrollableContent = editor.scrollHeight > editor.clientHeight;
+    if (!hasScrollableContent) editor.scrollTop = 0;
+  }, [note.id]);
+
+  useEffect(() => {
     if (firstMetadataRender.current) {
       firstMetadataRender.current = false;
       return;
