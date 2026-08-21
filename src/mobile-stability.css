@@ -274,3 +274,9 @@ html[data-bixbo-log-form-open] [data-bixbo-bottom-nav] {
 #main-content [class*="bg-[#FBF7EC]"][class*="border-[#D4CCB8]"] > svg.absolute > * {
   display: none !important;
 }
+
+/* Mental wellbeing lives inside the fullscreen log below its own title/date header.
+   Keep the step action row fully below that persistent header on mobile/PWA. */
+[data-bixbo-fullscreen-log="true"] .touch-pan-y > [data-mental-swipe-block]:first-child {
+  margin-top: 64px;
+}
