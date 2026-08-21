@@ -7,8 +7,7 @@ import { countNoBowelMovements } from "@/lib/domain/bowel";
 import { layoutOrder } from "@/lib/layoutRegistry";
 import { EMPTY, avgDayPain, useBixbo } from "@/lib/storage";
 import { PainInsightsCard } from "@/features/insights/PainInsightsCard";
-import { MentalDistressInsightsCard } from "@/features/insights/MentalDistressInsightsCard";
-import { DistressByFactorInsightsCard, MentalStatesInsightsCard } from "@/features/insights/MentalPatternsInsightsCards";
+import { MentalInsightsCard } from "@/features/insights/MentalInsightsCard";
 import { BowelOverviewCard } from "@/features/insights/BowelOverviewCard";
 import { DayPatternsInsightsCard } from "@/features/insights/DayPatternsInsightsCard";
 import { MedsAdherenceInsightsCard } from "@/features/insights/MedsAdherenceInsightsCard";
@@ -106,15 +105,7 @@ function InsightsPage() {
       </div>
 
       <div data-bixbo-jump-label={t("Mental distress")} style={{ order: 22 }}>
-        <DiagnosticProfiler id="MentalDistressInsightsCard"><MentalDistressInsightsCard data={view} /></DiagnosticProfiler>
-      </div>
-
-      <div data-bixbo-jump-label={t("Mental states")} style={{ order: 23 }}>
-        <DiagnosticProfiler id="MentalStatesInsightsCard"><MentalStatesInsightsCard data={view} /></DiagnosticProfiler>
-      </div>
-
-      <div data-bixbo-jump-label={t("Distress by factor")} style={{ order: 24 }}>
-        <DiagnosticProfiler id="DistressByFactorInsightsCard"><DistressByFactorInsightsCard data={view} /></DiagnosticProfiler>
+        <DiagnosticProfiler id="MentalInsightsCard"><MentalInsightsCard data={view} /></DiagnosticProfiler>
       </div>
 
       <div data-bixbo-jump-label={t("Symptoms")} style={{ order: 25 }}>
