@@ -4,7 +4,7 @@
    network-first; cache is only a fallback when the network is unavailable. */
 
 const BIXBO_RUNTIME_CACHE_PREFIX = "bixbo-runtime-";
-const BIXBO_RUNTIME_CACHE = `${BIXBO_RUNTIME_CACHE_PREFIX}v1`;
+const BIXBO_RUNTIME_CACHE = `${BIXBO_RUNTIME_CACHE_PREFIX}v2`;
 const BIXBO_APP_SHELL = "/";
 const BIXBO_FIXED_ASSETS = [
   "/manifest.json",
@@ -14,6 +14,7 @@ const BIXBO_FIXED_ASSETS = [
   "/icon-512.png",
   "/apple-launch-bixbo.png",
   "/bixbo-mascot-user.png",
+  "/bixbo-coffee-cup.svg",
 ];
 
 function sameOriginUrl(value) {
