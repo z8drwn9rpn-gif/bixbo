@@ -24,12 +24,14 @@ describe("Notes iOS editing", () => {
     expect(source).toContain('WebkitTouchCallout: "default"');
   });
 
-  it("does not collapse and recreate the textarea height on each keystroke", () => {
+  it("keeps long-note height stable while the editor itself scrolls", () => {
     expect(source).not.toContain("useLayoutEffect");
     expect(source).not.toContain('editor.style.height = "0px"');
+    expect(source).not.toContain("fitEditorToContent(editor)");
     expect(source).toContain("editor.scrollHeight");
-    expect(source).toContain("fitEditorToContent(editor)");
-    expect(source).toContain("overflow-hidden");
+    expect(source).toContain("overflow-y-auto");
+    expect(source).toContain('height: "max(52dvh, 420px)"');
+    expect(source).toContain('maxHeight: "70dvh"');
   });
 
   it("keeps body editing independent from checklist visibility", () => {
