@@ -40,9 +40,9 @@ function RingCount({ count, selected = false }: { count: number; selected?: bool
   return (
     <span className="grid h-8 w-8 place-items-center rounded-full text-[11px] text-foreground" style={{
       fontWeight: 700,
-      border: count > 0 ? `${selected ? 4 : 3}px solid ${selected ? "#c93c63" : "#f3a5b8"}` : "2px solid var(--border)",
-      background: count > 0 ? "color-mix(in srgb, #f3a5b8 11%, var(--surface))" : "var(--surface)",
-      boxShadow: count > 0 ? "inset 0 0 0 2px color-mix(in srgb, #f3a5b8 18%, transparent)" : "none",
+      border: count > 0 ? `${selected ? 4 : 3}px solid ${selected ? "#c93c63" : "#ee86a3"}` : "2px solid var(--border)",
+      background: count > 0 ? "color-mix(in srgb, #f38fac 38%, var(--surface))" : "var(--surface)",
+      boxShadow: count > 0 ? "inset 0 0 0 2px color-mix(in srgb, #f05f8a 32%, transparent), 0 2px 5px color-mix(in srgb, #d85d82 18%, transparent)" : "none",
     }}>{count > 0 ? count : "–"}</span>
   );
 }
