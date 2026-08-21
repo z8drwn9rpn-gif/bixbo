@@ -15,6 +15,7 @@ const BASELINE_KEY = "bixbo:flight-baselines:v1";
 const LIFECYCLE_GUARD_WINDOW_MS = 3_000;
 const IMPOSSIBLE_ROUTE_SETTLE_MS = 30_000;
 const CONTAMINATED_STARTUP_GAP_MS = 3_000;
+const UNCORROBORATED_IOS_HEARTBEAT_GAP_MS = 30_000;
 const MAX_TRUSTED_BASELINE_SAMPLE_MS = 10_000;
 
 let lifecycleTransitionAt = 0;
@@ -36,6 +37,15 @@ function writeJson(key: string, value: unknown): void {
   }
 }
 
+function isIosStandalonePwa(): boolean {
+  if (typeof window === "undefined" || typeof navigator === "undefined") return false;
+  const nav = navigator as Navigator & { standalone?: boolean; maxTouchPoints?: number };
+  const ua = navigator.userAgent || "";
+  const ios = /iPhone|iPad|iPod/i.test(ua) || (navigator.platform === "MacIntel" && (nav.maxTouchPoints ?? 0) > 1);
+  const standalone = nav.standalone === true || window.matchMedia?.("(display-mode: standalone)").matches === true;
+  return ios && standalone;
+}
+
 function issueHasLifecycleEvidence(issue: StoredPerformanceIssue): boolean {
   const evidence = [issue.context ?? "", ...(Array.isArray(issue.timeline) ? issue.timeline : [])]
     .join(" ")
@@ -48,7 +58,11 @@ function issueHasLifecycleEvidence(issue: StoredPerformanceIssue): boolean {
     || evidence.includes("browser-lifecycle");
 }
 
-export function isLifecycleContaminatedPerformanceIssue(issue: StoredPerformanceIssue, transitionAt = lifecycleTransitionAt): boolean {
+export function isLifecycleContaminatedPerformanceIssue(
+  issue: StoredPerformanceIssue,
+  transitionAt = lifecycleTransitionAt,
+  iosStandalone = false,
+): boolean {
   if (!issue || (issue.kind !== "freeze" && issue.kind !== "jank")) return false;
   const duration = typeof issue.durationMs === "number" && Number.isFinite(issue.durationMs) ? issue.durationMs : 0;
   const message = issue.message ?? "";
@@ -68,17 +82,28 @@ export function isLifecycleContaminatedPerformanceIssue(issue: StoredPerformance
     return closeToLifecycleTransition || (duration >= CONTAMINATED_STARTUP_GAP_MS && issueHasLifecycleEvidence(issue));
   }
 
+  if (/^Main thread stalled for about /i.test(message)) {
+    // iOS standalone can suspend JavaScript without first changing
+    // document.visibilityState. A timer callback then resumes tens of seconds
+    // later while the document still says "visible". Timer delay alone cannot
+    // prove that JavaScript blocked the foreground UI for that whole interval.
+    // Keep normal 1-30 s freeze evidence, but discard only the extreme timer-only
+    // gap class seen when the OS freezes the PWA process.
+    return iosStandalone && duration >= UNCORROBORATED_IOS_HEARTBEAT_GAP_MS;
+  }
+
   return false;
 }
 
 export function sanitizeLifecyclePerformanceArtifacts(transitionAt = lifecycleTransitionAt): void {
   if (typeof window === "undefined") return;
 
+  const iosStandalone = isIosStandalonePwa();
   const rawIssues = readJson<unknown>(ISSUE_KEY, []);
   if (Array.isArray(rawIssues)) {
     const filtered = rawIssues.filter((value) => {
       if (!value || typeof value !== "object") return true;
-      return !isLifecycleContaminatedPerformanceIssue(value as StoredPerformanceIssue, transitionAt);
+      return !isLifecycleContaminatedPerformanceIssue(value as StoredPerformanceIssue, transitionAt, iosStandalone);
     });
     if (filtered.length !== rawIssues.length) writeJson(ISSUE_KEY, filtered);
   }
@@ -134,7 +159,7 @@ export function installLifecyclePerformanceGuard(): () => void {
   window.addEventListener("pagehide", onLifecycleTransition);
 
   // Backstop for incidents written by the legacy forensic recorder after its own
-  // delayed RAF callback returns from an iOS background suspension.
+  // delayed RAF/timer callback returns from an iOS background suspension.
   const intervalId = window.setInterval(() => sanitizeLifecyclePerformanceArtifacts(), 2_000);
 
   return () => {

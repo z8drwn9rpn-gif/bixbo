@@ -9,6 +9,7 @@ const RELOAD_ALERT_COOLDOWN_MS = 60_000;
 const FAST_LIFECYCLE_ABORT_MS = 1_500;
 const POST_RESUME_SANITIZE_MS = 1_000;
 const SUSPENDED_DURATION_ARTIFACT_MS = 2 * 60_000;
+const STARTUP_SANITIZE_DELAYS_MS = [2_000, 6_000, 12_000] as const;
 
 type StoredIssue = {
   at?: unknown;
@@ -75,7 +76,8 @@ function isFastLifecycleFetchAbort(issue: StoredIssue): boolean {
   const hiddenOrLeaving = /visibility(?:=| · )hidden|pagehide · (?:leaving|bfcache)/i.test(evidence);
   const reloadOrLegacyPoll = /navigation=reload|request · GET \/(?: ·| →)/i.test(evidence);
   const serviceWorkerTakeover = /service-worker · controller changed/i.test(evidence);
-  return hiddenOrLeaving || reloadOrLegacyPoll || serviceWorkerTakeover;
+  const serviceWorkerBootstrap = /deployment · build [^ ]+.*service-worker · controller \//i.test(evidence);
+  return hiddenOrLeaving || reloadOrLegacyPoll || serviceWorkerTakeover || serviceWorkerBootstrap;
 }
 
 /**
@@ -254,4 +256,12 @@ export function installForensicLifecycleGuard(): void {
   window.addEventListener("focus", sanitizeWhenVisible);
   document.addEventListener("visibilitychange", sanitizeWhenVisible);
   navigator.serviceWorker?.addEventListener("controllerchange", sanitizeAfterControllerChange);
+
+  // A freshly installed worker can abort startup-owned fetches without emitting
+  // a controllerchange after the recorder has attached. Re-scan the short boot
+  // window so those 4-5 ms WebKit Load failed artifacts do not survive until
+  // the manual App Scan runs.
+  for (const delay of STARTUP_SANITIZE_DELAYS_MS) {
+    window.setTimeout(() => sanitizeStoredForensicIssues(state.installedAt), delay);
+  }
 }

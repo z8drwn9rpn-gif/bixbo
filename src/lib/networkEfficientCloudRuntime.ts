@@ -34,6 +34,8 @@ export const CLOUD_RESUME_COOLDOWN_MS = 30_000;
 export const NOTIFICATION_CHANGE_DEBOUNCE_MS = 15_000;
 export const NOTIFICATION_SERVER_SYNC_MS = 5 * 60_000;
 export const NOTIFICATION_INITIAL_SYNC_DELAY_MS = 30_000;
+export const NOTIFICATION_INTERACTION_QUIET_MS = 3_000;
+export const NOTIFICATION_RESUME_SYNC_DELAY_MS = 3_000;
 
 function browserIsOffline(): boolean {
   return typeof navigator !== "undefined" && navigator.onLine === false;
@@ -45,6 +47,14 @@ function privateSnapshotKey(data: BixboData): string {
 
 function logCloudError(scope: string, error: unknown): void {
   console.warn(`BIXBO ${scope}:`, error);
+}
+
+export function notificationSyncQuietPeriodRemaining(lastInteractionAt: number, now = Date.now()): number {
+  if (!lastInteractionAt) return 0;
+  const elapsed = Math.max(0, now - lastInteractionAt);
+  return elapsed < NOTIFICATION_INTERACTION_QUIET_MS
+    ? NOTIFICATION_INTERACTION_QUIET_MS - elapsed
+    : 0;
 }
 
 /**
@@ -215,6 +225,8 @@ export function useNetworkEfficientCloudSync(): void {
  * Remote reminder state is eventually consistent and does not need to be sent
  * after every diary mutation. Local reminder checks still run every minute;
  * server profile updates are coalesced and capped to a five-minute cadence.
+ * A scheduled server sync also waits for a short period without user input so
+ * auth/subscription response handling cannot land in the middle of a tap.
  */
 export function useNetworkEfficientNotificationRuntime(): void {
   useEffect(() => {
@@ -222,6 +234,7 @@ export function useNetworkEfficientNotificationRuntime(): void {
 
     let stopped = false;
     let lastServerSyncAt = 0;
+    let lastInteractionAt = 0;
     let serverSyncTimer: number | null = null;
 
     const localTick = () => {
@@ -229,11 +242,25 @@ export function useNetworkEfficientNotificationRuntime(): void {
       void runNotificationChecks().catch((error) => logCloudError("local notifications", error));
     };
 
+    const scheduleServerSync = (delay: number): void => {
+      if (serverSyncTimer) window.clearTimeout(serverSyncTimer);
+      serverSyncTimer = window.setTimeout(() => {
+        serverSyncTimer = null;
+        void runServerSync();
+      }, delay);
+    };
+
     const runServerSync = async (): Promise<void> => {
       if (stopped || browserIsOffline()) return;
       if (Notification.permission !== "granted") return;
       if (!notifPrefs(getBixbo()).enabled) return;
       if (Date.now() - lastServerSyncAt < NOTIFICATION_SERVER_SYNC_MS) return;
+
+      const quietRemaining = notificationSyncQuietPeriodRemaining(lastInteractionAt);
+      if (quietRemaining > 0) {
+        scheduleServerSync(quietRemaining + 100);
+        return;
+      }
 
       // Reserve the cadence before awaiting the network call so multiple
       // lifecycle/store events cannot launch parallel syncs.
@@ -248,12 +275,8 @@ export function useNetworkEfficientNotificationRuntime(): void {
       }
     };
 
-    const scheduleServerSync = (delay: number): void => {
-      if (serverSyncTimer) window.clearTimeout(serverSyncTimer);
-      serverSyncTimer = window.setTimeout(() => {
-        serverSyncTimer = null;
-        void runServerSync();
-      }, delay);
+    const markInteraction = () => {
+      lastInteractionAt = Date.now();
     };
 
     if (Notification.permission === "granted" && notifPrefs(getBixbo()).enabled) {
@@ -272,15 +295,21 @@ export function useNetworkEfficientNotificationRuntime(): void {
     const onVisible = () => {
       if (document.visibilityState !== "visible") return;
       localTick();
-      if (Date.now() - lastServerSyncAt >= NOTIFICATION_SERVER_SYNC_MS) scheduleServerSync(1_000);
+      if (Date.now() - lastServerSyncAt >= NOTIFICATION_SERVER_SYNC_MS) {
+        scheduleServerSync(NOTIFICATION_RESUME_SYNC_DELAY_MS);
+      }
     };
 
     const onOnline = () => {
-      if (Date.now() - lastServerSyncAt >= NOTIFICATION_SERVER_SYNC_MS) scheduleServerSync(1_000);
+      if (Date.now() - lastServerSyncAt >= NOTIFICATION_SERVER_SYNC_MS) {
+        scheduleServerSync(NOTIFICATION_RESUME_SYNC_DELAY_MS);
+      }
     };
 
     document.addEventListener("visibilitychange", onVisible);
     window.addEventListener("online", onOnline);
+    window.addEventListener("pointerdown", markInteraction, true);
+    window.addEventListener("keydown", markInteraction, true);
 
     return () => {
       stopped = true;
@@ -290,6 +319,8 @@ export function useNetworkEfficientNotificationRuntime(): void {
       unsubscribeStore();
       document.removeEventListener("visibilitychange", onVisible);
       window.removeEventListener("online", onOnline);
+      window.removeEventListener("pointerdown", markInteraction, true);
+      window.removeEventListener("keydown", markInteraction, true);
     };
   }, []);
 }

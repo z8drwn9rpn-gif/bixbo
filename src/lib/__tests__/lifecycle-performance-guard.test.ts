@@ -32,6 +32,19 @@ describe("lifecycle performance guard", () => {
     }, transitionAt)).toBe(true);
   });
 
+  it("rejects extreme timer-only heartbeat gaps on iOS standalone", () => {
+    const issue = {
+      kind: "freeze",
+      at: 1_787_323_152_674,
+      durationMs: 42_457,
+      message: "Main thread stalled for about 42457 ms. Scrolling, taps or screen changes may have appeared frozen.",
+      context: "visibility=visible, online=yes, cpu=4",
+    };
+
+    expect(isLifecycleContaminatedPerformanceIssue(issue, 0, true)).toBe(true);
+    expect(isLifecycleContaminatedPerformanceIssue(issue, 0, false)).toBe(false);
+  });
+
   it("keeps genuine interaction and unrelated performance evidence", () => {
     expect(isLifecycleContaminatedPerformanceIssue({
       kind: "interaction",
