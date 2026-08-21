@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { useI18n } from "@/hooks/useI18n";
+import { MentalWellbeingForm } from "@/features/logging/MentalWellbeingForm";
 import { painColor, nowHHMM, type BixboData, type CustomLogEntry, type CustomLogValue } from "@/lib/storage";
 import type { CustomLogDefinition, RegistryFieldDefinition } from "@/lib/appRegistry";
 
@@ -152,6 +153,10 @@ export function CustomLogForm({
   const [values, setValues] = useState<Record<string, CustomLogValue>>(() => ({ ...(initialEntry?.values ?? {}) }));
   const [note, setNote] = useState(initialEntry?.note ?? "");
   const fields = useMemo(() => definition.fields.filter((field) => field.enabled !== false).sort((a, b) => a.order - b.order), [definition.fields]);
+
+  if (definition.id === "mental-wellbeing") {
+    return <MentalWellbeingForm date={date} data={data} update={update} onDone={onDone} />;
+  }
 
   const save = () => {
     const entry: CustomLogEntry = {
