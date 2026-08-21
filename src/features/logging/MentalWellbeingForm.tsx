@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useI18n } from "@/hooks/useI18n";
 import { Ico } from "@/components/icons/BixboExtraIcons";
 import { Pencil, Trash2, X } from "@/components/icons/BixboExtraIcons";
@@ -93,8 +93,51 @@ export function MentalWellbeingForm({
   const [factors, setFactors] = useState<string[]>([]);
   const [note, setNote] = useState("");
   const [scaleInfoOpen, setScaleInfoOpen] = useState(false);
+  const swipeStartRef = useRef<{ x: number; y: number } | null>(null);
+  const suppressSwipeClickRef = useRef(false);
 
   const selectedEntry = savedEntries.find((entry) => entry.id === editingId);
+
+  const handleTouchStart = (event: React.TouchEvent<HTMLDivElement>) => {
+    if (scaleInfoOpen) return;
+    const touch = event.touches[0];
+    if (!touch) return;
+    swipeStartRef.current = { x: touch.clientX, y: touch.clientY };
+  };
+
+  const handleTouchEnd = (event: React.TouchEvent<HTMLDivElement>) => {
+    const start = swipeStartRef.current;
+    swipeStartRef.current = null;
+    if (!start || scaleInfoOpen) return;
+
+    const touch = event.changedTouches[0];
+    if (!touch) return;
+    const dx = touch.clientX - start.x;
+    const dy = touch.clientY - start.y;
+    if (Math.abs(dx) < 55 || Math.abs(dx) <= Math.abs(dy)) return;
+
+    const target = event.target as HTMLElement;
+    if (target.closest('input,textarea,select,[role="slider"],[data-mental-swipe-block]')) return;
+
+    suppressSwipeClickRef.current = true;
+    window.setTimeout(() => {
+      suppressSwipeClickRef.current = false;
+    }, 350);
+
+    if (dx < 0 && step === 1) setStep(2);
+    if (dx > 0 && step === 2) setStep(1);
+  };
+
+  const handleTouchCancel = () => {
+    swipeStartRef.current = null;
+  };
+
+  const handleClickCapture = (event: React.MouseEvent<HTMLDivElement>) => {
+    if (!suppressSwipeClickRef.current) return;
+    suppressSwipeClickRef.current = false;
+    event.preventDefault();
+    event.stopPropagation();
+  };
 
   const loadEntry = (entry: MentalWellbeingEntry) => {
     setEditingId(entry.id);
@@ -162,8 +205,14 @@ export function MentalWellbeingForm({
   };
 
   return (
-    <div className="mx-auto flex w-full max-w-xl flex-col">
-      <div className="relative z-10 border-b border-border/70 bg-background/95 px-4 py-3 shadow-sm sm:px-5">
+    <div
+      className="mx-auto flex w-full max-w-xl touch-pan-y flex-col"
+      onTouchStart={handleTouchStart}
+      onTouchEnd={handleTouchEnd}
+      onTouchCancel={handleTouchCancel}
+      onClickCapture={handleClickCapture}
+    >
+      <div data-mental-swipe-block className="relative z-10 border-b border-border/70 bg-background/95 px-4 py-3 shadow-sm sm:px-5">
         <div className="mx-auto flex w-full max-w-xl items-center gap-3">
           {step === 2 ? (
             <button
@@ -360,6 +409,7 @@ export function MentalWellbeingForm({
 
       {scaleInfoOpen ? (
         <div
+          data-mental-swipe-block
           className="fixed inset-0 z-[90] flex items-end justify-center bg-black/20 px-3 pb-[calc(12px+env(safe-area-inset-bottom))] backdrop-blur-[1px]"
           role="presentation"
           onClick={() => setScaleInfoOpen(false)}
