@@ -34,6 +34,15 @@ describe("Eyes and Body Battery visual contract", () => {
     expect(eyesForm).not.toContain('{ value: "Twitching / tetany feeling", icon: "⚡" }');
   });
 
+  it("removes Other and renders custom sensitivity emoji as BIXBO artwork without a saved-card plus icon", () => {
+    expect(eyesForm).not.toContain('{ value: "Other", icon: "other" }');
+    expect(eyesForm).toContain('const HIDDEN_EYES_SENSITIVITY_OPTIONS = new Set(["Other"])');
+    expect(eyesForm).toContain('import { BixboSafeText } from "@/components/icons/BixboSafeText"');
+    expect(eyesForm).toContain("<BixboSafeText");
+    expect(eyesForm).toContain("text={value}");
+    expect(eyesForm).not.toContain('<BixboEyeSensitivityIcon variant="custom" size={30} />');
+  });
+
   it("supports persistent add, rename and delete for custom Vision changes", () => {
     expect(eyesForm).toContain("<CustomChipList");
     expect(eyesForm).toContain("eyesVisionChanges");
