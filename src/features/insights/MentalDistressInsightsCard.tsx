@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useDismissTapTooltip } from "@/components/charts";
 import { BrainIcon } from "@/components/icons/BixboBrandIcons";
-import { ChevronLeft, ChevronRight } from "@/components/icons/BixboExtraIcons";
+import { ChevronLeft, ChevronRight, Ico } from "@/components/icons/BixboExtraIcons";
 import { useI18n } from "@/hooks/useI18n";
 import { fromKey, todayKey, type BixboData, type DayLog } from "@/lib/storage";
 import { MetricCards, QuickInsights } from "./InsightDashboardPrimitives";
@@ -180,7 +180,7 @@ export function MentalDistressInsightsCard({ data }: { data: BixboData }) {
     [points],
   );
   const factorStats = useMemo(
-    () => choiceStats(points, "factors", "•").sort((a, b) => b.average - a.average || b.count - a.count).slice(0, 5),
+    () => choiceStats(points, "factors", "🧠").sort((a, b) => b.average - a.average || b.count - a.count).slice(0, 5),
     [points],
   );
   const maxStateCount = Math.max(1, ...stateStats.map((item) => item.count));
@@ -338,7 +338,7 @@ export function MentalDistressInsightsCard({ data }: { data: BixboData }) {
               const color = STATE_BAR_COLORS[index % STATE_BAR_COLORS.length] ?? "#8fac45";
               return (
                 <div key={item.raw} className="grid grid-cols-[24px_minmax(92px,118px)_minmax(0,1fr)_24px] items-center gap-2">
-                  <span className="grid h-6 w-6 place-items-center rounded-full text-[12px] ring-1 ring-border/40" style={{ background: `${color}22` }} aria-hidden="true">{item.icon}</span>
+                  <span className="grid h-6 w-6 place-items-center rounded-full ring-1 ring-border/40" style={{ background: `${color}22` }} aria-hidden="true"><Ico e={item.icon} size={18} /></span>
                   <span className="truncate text-[10px] font-medium text-foreground">{item.label}</span>
                   <span className="relative h-4 rounded-md bg-tint/45">
                     <span
@@ -366,7 +366,7 @@ export function MentalDistressInsightsCard({ data }: { data: BixboData }) {
               const color = vividPainChartColor(item.average);
               return (
                 <div key={item.raw} className="grid grid-cols-[24px_minmax(100px,124px)_minmax(0,1fr)_56px] items-center gap-2">
-                  <span className="grid h-6 w-6 place-items-center rounded-full bg-tint/55 text-[12px] ring-1 ring-border/40" aria-hidden="true">{item.icon}</span>
+                  <span className="grid h-6 w-6 place-items-center rounded-full bg-tint/55 ring-1 ring-border/40" aria-hidden="true"><Ico e={item.icon} size={18} /></span>
                   <span className="truncate text-[10px] font-medium text-foreground">{item.label}</span>
                   <span className="relative h-4 rounded-md bg-tint/45">
                     <span
