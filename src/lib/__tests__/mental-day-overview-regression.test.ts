@@ -2,18 +2,16 @@ import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
 describe("mental distress daily overview", () => {
-  it("keeps mental distress directly after the pain card with pain-style actions", () => {
+  it("mounts the mental card immediately after Pain without growing DayOverview", () => {
     const dayOverview = readFileSync("src/components/home/DayOverview.tsx", "utf8");
+    const fallback = readFileSync("src/components/home/BlueberryDayOverviewFallback.tsx", "utf8");
     const mentalCard = readFileSync("src/components/home/MentalDistressDayOverviewCard.tsx", "utf8");
 
-    const painCard = dayOverview.indexOf('<Card title="Pain"');
-    const mentalCardMount = dayOverview.indexOf("<MentalDistressDayOverviewCard");
-    const standaloneSymptoms = dayOverview.indexOf('<Card title="Add symptoms"');
-
-    expect(painCard).toBeGreaterThan(-1);
-    expect(mentalCardMount).toBeGreaterThan(painCard);
-    expect(standaloneSymptoms).toBeGreaterThan(mentalCardMount);
-    expect(dayOverview).toContain("mentalWellbeingCount");
+    expect(dayOverview).not.toContain("MentalDistressDayOverviewCard");
+    expect(fallback).toContain('[data-bixbo-day-overview-card="pain"]');
+    expect(fallback).toContain('painCard.insertAdjacentElement("afterend", host)');
+    expect(fallback).toContain("createPortal(");
+    expect(fallback).toContain("<MentalDistressDayOverviewCard");
 
     expect(mentalCard).toContain('<Card title="Mental distress"');
     expect(mentalCard).toContain("DayOverviewDeleteButton as DeleteBtn");
@@ -23,9 +21,12 @@ describe("mental distress daily overview", () => {
   });
 
   it("opens the tapped mental entry prefilled for editing", () => {
+    const fallback = readFileSync("src/components/home/BlueberryDayOverviewFallback.tsx", "utf8");
     const customLogForm = readFileSync("src/components/CustomLogForm.tsx", "utf8");
     const mentalForm = readFileSync("src/features/logging/MentalWellbeingForm.tsx", "utf8");
 
+    expect(fallback).toContain("setEditingMental(entry as MentalOverviewEntry)");
+    expect(fallback).toContain("initialEntry={editingMental as unknown as CustomLogEntry}");
     expect(customLogForm).toContain("initialEntry={initialEntry as unknown as MentalWellbeingEntry | undefined}");
     expect(mentalForm).toContain("initialEntry?: MentalWellbeingEntry");
     expect(mentalForm).toContain("useState<string | null>(initialEntry?.id ?? null)");

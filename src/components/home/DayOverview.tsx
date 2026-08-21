@@ -54,7 +54,6 @@ import {
 import { ScheduledDosePopup, type ScheduledDoseTarget } from "@/components/home/ScheduledDosePopup";
 import { DayOverviewSexCard } from "@/components/home/DayOverviewSexCard";
 import { DayOverviewEyesCard } from "@/components/home/DayOverviewEyesCard";
-import { MentalDistressDayOverviewCard } from "@/components/home/MentalDistressDayOverviewCard";
 import { DayOverviewCard as Card, DayOverviewDeleteButton as DeleteBtn } from "@/components/home/DayOverviewPrimitives";
 import { getTakenScheduledItems, isScheduledDoseTaken, scheduledDoseKey } from "@/lib/medicationAdherence";
 
@@ -105,7 +104,6 @@ export function DayPreview({
   const cycleTrackingHidden = isCycleTrackingHidden(data);
   const urinaryOnlyEntries = (log?.bowel ?? []).filter((entry) => entry.urinaryOnly || entry.bristol === -2);
   const bowelEntries = (log?.bowel ?? []).filter((entry) => !entry.urinaryOnly && entry.bristol !== -2);
-  const mentalWellbeingCount = (((log as typeof log & { mentalWellbeing?: unknown[] })?.mentalWellbeing) ?? []).length;
   const flowLabel = (level?: string | null): string => {
     switch (level) {
       case "spotting":
@@ -127,7 +125,6 @@ export function DayPreview({
     !!(
       log &&
       (log.pain?.length ||
-        mentalWellbeingCount ||
         log.tetany?.length ||
         log.panic?.length ||
         log.eyes?.length ||
@@ -429,8 +426,6 @@ export function DayPreview({
         </Card>
       )) ||
         null}
-
-      <MentalDistressDayOverviewCard date={date} data={data} update={update} onEdit={onEdit} />
 
       {log?.pain?.some((entry) => entry.entryKind === "symptom-update" && !entry.sourcePainId) ? (
         <Card title="Add symptoms" icon="➕">
