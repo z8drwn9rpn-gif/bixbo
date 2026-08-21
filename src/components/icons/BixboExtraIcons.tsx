@@ -31,7 +31,31 @@ function BixboStarIcon(p: ExtraIconProps) { return <Base {...p}><Shadow/><path d
 function BixboMoonIcon(p: ExtraIconProps) { return <Base {...p}><Shadow/><path d="M43 12c-10 2-17 10-17 20 0 9 6 16 15 19-4 2-8 3-12 2-12-2-20-13-18-25 2-13 14-21 27-18 2 0 4 1 5 2Z" fill="#8f80d7" stroke="#6657a8" strokeWidth="2"/><circle cx="43" cy="19" r="3" fill="#efe8ff"/><circle cx="49" cy="27" r="2" fill="#efe8ff"/></Base>; }
 function BixboSunIcon(p: ExtraIconProps) { return <Base {...p}><Shadow/><circle cx="32" cy="31" r="13" fill="#f2c958" stroke="#c69d32" strokeWidth="2"/><g stroke="#d2a83b" strokeWidth="4" strokeLinecap="round"><path d="M32 7v7M32 48v7M8 31h7M49 31h7M15 14l5 5M44 43l5 5M49 14l-5 5M20 43l-5 5"/></g></Base>; }
 function BixboSunflowerIcon(p: ExtraIconProps) { return <Base {...p}><Shadow/><g fill="#f5c842" stroke="#d49d23" strokeWidth="1.4"><ellipse cx="32" cy="14" rx="6" ry="11"/><ellipse cx="32" cy="46" rx="6" ry="11"/><ellipse cx="16" cy="30" rx="11" ry="6"/><ellipse cx="48" cy="30" rx="11" ry="6"/><ellipse cx="21" cy="19" rx="6" ry="10" transform="rotate(-45 21 19)"/><ellipse cx="43" cy="19" rx="6" ry="10" transform="rotate(45 43 19)"/><ellipse cx="21" cy="41" rx="6" ry="10" transform="rotate(45 21 41)"/><ellipse cx="43" cy="41" rx="6" ry="10" transform="rotate(-45 43 41)"/></g><circle cx="32" cy="30" r="12" fill="#7b4f25" stroke="#5e3a1d" strokeWidth="2"/><circle cx="27" cy="26" r="2" fill="#b47b35"/><circle cx="36" cy="27" r="2" fill="#b47b35"/><circle cx="31" cy="34" r="2" fill="#b47b35"/></Base>; }
-function BixboBrainIcon(p: ExtraIconProps) { return <Base {...p}><Shadow/><path d="M25 13c-7 0-12 5-12 11 0 3 1 5 3 7-3 2-4 5-3 8 1 5 5 8 10 8 2 5 8 7 13 4 5 3 11 1 13-4 5 0 9-3 10-8 1-3 0-6-3-8 2-2 3-4 3-7 0-6-5-11-12-11-3-4-8-5-12-2-4-3-9-2-10 2Z" fill="#a9b97c" stroke="#71804f" strokeWidth="2"/><path d="M31 16v33M22 21c4 2 5 5 3 9M42 20c-4 2-5 5-3 9M21 38c4-3 8-2 10 1M43 37c-4-3-8-2-10 1" stroke="#71804f" strokeWidth="2.5" strokeLinecap="round"/></Base>; }
+function BixboBrainIcon(p: ExtraIconProps) {
+  if (p.size === 30) {
+    return <Base {...p}>
+      <defs>
+        <radialGradient id="mentalBrainPink" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(22 17) rotate(48) scale(43 41)">
+          <stop stopColor="#ffd7e7"/>
+          <stop offset="0.38" stopColor="#f58bb5"/>
+          <stop offset="0.72" stopColor="#dd5f96"/>
+          <stop offset="1" stopColor="#a83e72"/>
+        </radialGradient>
+        <linearGradient id="mentalBrainDepth" x1="18" y1="14" x2="48" y2="52" gradientUnits="userSpaceOnUse">
+          <stop stopColor="#ffb8d3"/>
+          <stop offset="1" stopColor="#a83e72"/>
+        </linearGradient>
+      </defs>
+      <ellipse cx="32" cy="56" rx="16" ry="3.2" fill="#7c3654" opacity="0.2"/>
+      <path d="M25 13c-7 0-12 5-12 11 0 3 1 5 3 7-3 2-4 5-3 8 1 5 5 8 10 8 2 5 8 7 13 4 5 3 11 1 13-4 5 0 9-3 10-8 1-3 0-6-3-8 2-2 3-4 3-7 0-6-5-11-12-11-3-4-8-5-12-2-4-3-9-2-10 2Z" fill="url(#mentalBrainPink)" stroke="#a83e72" strokeWidth="2.2"/>
+      <path d="M31 15v34M22 21c4 2 5 5 3 9M42 20c-4 2-5 5-3 9M20 38c4-3 8-2 11 1M44 37c-4-3-8-2-11 1M18 31c4-1 7 1 9 4M46 30c-4-1-7 1-9 4" stroke="url(#mentalBrainDepth)" strokeWidth="2.6" strokeLinecap="round"/>
+      <path d="M20 18c3-3 8-4 11-1M15 27c2-2 4-3 7-2M37 15c3-2 7-1 10 2" stroke="#ffe8f1" strokeWidth="2.4" strokeLinecap="round" opacity="0.72"/>
+      <ellipse cx="22" cy="18" rx="5.5" ry="2.5" transform="rotate(-25 22 18)" fill="#fff" opacity="0.38"/>
+      <ellipse cx="45" cy="24" rx="3.2" ry="1.6" transform="rotate(24 45 24)" fill="#fff" opacity="0.28"/>
+    </Base>;
+  }
+  return <Base {...p}><Shadow/><path d="M25 13c-7 0-12 5-12 11 0 3 1 5 3 7-3 2-4 5-3 8 1 5 5 8 10 8 2 5 8 7 13 4 5 3 11 1 13-4 5 0 9-3 10-8 1-3 0-6-3-8 2-2 3-4 3-7 0-6-5-11-12-11-3-4-8-5-12-2-4-3-9-2-10 2Z" fill="#a9b97c" stroke="#71804f" strokeWidth="2"/><path d="M31 16v33M22 21c4 2 5 5 3 9M42 20c-4 2-5 5-3 9M21 38c4-3 8-2 10 1M43 37c-4-3-8-2-10 1" stroke="#71804f" strokeWidth="2.5" strokeLinecap="round"/></Base>;
+}
 function BixboDropIcon(p: ExtraIconProps) { return <Base {...p}><Shadow/><path d="M32 9c10 13 16 22 16 31a16 16 0 0 1-32 0c0-9 6-18 16-31Z" fill="#74add9" stroke="#4f82ad" strokeWidth="2"/><path d="M24 40c2 5 7 7 12 5" stroke="#dff3ff" strokeWidth="3" strokeLinecap="round"/></Base>; }
 function BixboBloodDropIcon(p: ExtraIconProps) { return <Base {...p}><Shadow/><path d="M32 9c10 13 16 22 16 31a16 16 0 0 1-32 0c0-9 6-18 16-31Z" fill="#d94b55" stroke="#a72a35" strokeWidth="2"/><path d="M24 40c2 5 7 7 12 5" stroke="#ffd9dc" strokeWidth="3" strokeLinecap="round"/></Base>; }
 function BixboFireIcon(p: ExtraIconProps) { return <Base {...p}><Shadow/><path d="M35 7c3 10-4 13 1 20 2 3 6 1 8-5 8 9 10 18 5 26-4 6-10 9-18 9-11 0-19-7-19-17 0-8 5-15 12-22 0 8 2 12 6 13 6-4 2-13 5-24Z" fill="#ff5b37" stroke="#d53d23" strokeWidth="2"/><path d="M31 31c5 6 7 10 4 15-2 3-7 4-10 1-4-4-2-10 6-16Z" fill="#ffc443"/><path d="M18 41c1 7 5 10 11 12" stroke="#ffb7a6" strokeWidth="3" strokeLinecap="round" opacity=".7"/></Base>; }
