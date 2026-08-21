@@ -55,6 +55,7 @@ export function NoteEditor({
   const contentRef = useRef(bodyText);
   const bodySaveTimerRef = useRef<number | null>(null);
   const firstMetadataRender = useRef(true);
+  const pendingBodyScrollYRef = useRef<number | null>(null);
 
   const fitEditorToContent = (editor: HTMLTextAreaElement, allowShrink = false) => {
     const minHeight = Math.round(window.innerHeight * 0.4);
@@ -85,14 +86,26 @@ export function NoteEditor({
     }));
   };
 
+  const beginBodyEditing = () => {
+    pendingBodyScrollYRef.current = window.scrollY;
+    setEditingBody(true);
+  };
+
   useEffect(() => {
     if (!editingBody) return;
     const frame = window.requestAnimationFrame(() => {
       const editor = editorRef.current;
-      if (editor) {
-        fitEditorToContent(editor, true);
-        editor.focus();
-      }
+      if (!editor) return;
+
+      const preservedScrollY = pendingBodyScrollYRef.current ?? window.scrollY;
+      fitEditorToContent(editor, true);
+      editor.focus({ preventScroll: true });
+      window.scrollTo({ top: preservedScrollY, left: 0, behavior: "auto" });
+
+      window.requestAnimationFrame(() => {
+        window.scrollTo({ top: preservedScrollY, left: 0, behavior: "auto" });
+        pendingBodyScrollYRef.current = null;
+      });
     });
     return () => window.cancelAnimationFrame(frame);
   }, [editingBody, note.id]);
@@ -147,7 +160,7 @@ export function NoteEditor({
   const applyMarker = (marker: "**" | "==") => {
     const editor = editorRef.current;
     if (!editor) {
-      setEditingBody(true);
+      beginBodyEditing();
       return;
     }
 
@@ -163,7 +176,7 @@ export function NoteEditor({
     scheduleBodySave(editor);
 
     window.requestAnimationFrame(() => {
-      editor.focus();
+      editor.focus({ preventScroll: true });
       const caret = end + marker.length * 2;
       editor.setSelectionRange(caret, caret);
     });
@@ -239,11 +252,7 @@ export function NoteEditor({
                     : "bg-tint text-foreground ring-border/70 hover:bg-primary/10"
                 }`}
               >
-                {folder.icon ? (
-                  <BixboIcon emoji={folder.icon} size={14} />
-                ) : (
-                  <BixboIcon name="note" size={14} />
-                )}
+                {folder.icon ? <BixboIcon emoji={folder.icon} size={14} /> : <BixboIcon name="note" size={14} />}
                 <BixboSafeText text={folder.name} size={14} />
               </button>
             ))}
@@ -262,30 +271,16 @@ export function NoteEditor({
         </div>
 
         <div className="flex flex-wrap items-center gap-2 rounded-2xl bg-surface p-2 ring-1 ring-border/70">
-          <button
-            type="button"
-            onPointerDown={(event) => event.preventDefault()}
-            onClick={() => applyMarker("**")}
-            className="grid h-9 w-9 place-items-center rounded-xl hover:bg-tint"
-            aria-label={t("Bold")}
-          >
+          <button type="button" onPointerDown={(event) => event.preventDefault()} onClick={() => applyMarker("**")} className="grid h-9 w-9 place-items-center rounded-xl hover:bg-tint" aria-label={t("Bold")}>
             <Bold className="h-4 w-4" />
           </button>
-          <button
-            type="button"
-            onPointerDown={(event) => event.preventDefault()}
-            onClick={() => applyMarker("==")}
-            className="grid h-9 w-9 place-items-center rounded-xl hover:bg-tint"
-            aria-label={t("Highlight")}
-          >
+          <button type="button" onPointerDown={(event) => event.preventDefault()} onClick={() => applyMarker("==")} className="grid h-9 w-9 place-items-center rounded-xl hover:bg-tint" aria-label={t("Highlight")}>
             <Highlighter className="h-4 w-4" />
           </button>
           <button
             type="button"
             onClick={() => setShowChecklist((value) => !value)}
-            className={`grid h-9 w-9 place-items-center rounded-xl ${
-              showChecklist ? "bg-primary text-primary-foreground" : "hover:bg-tint"
-            }`}
+            className={`grid h-9 w-9 place-items-center rounded-xl ${showChecklist ? "bg-primary text-primary-foreground" : "hover:bg-tint"}`}
             aria-label={t("Checklist")}
           >
             <ListChecks className="h-4 w-4" />
@@ -296,9 +291,7 @@ export function NoteEditor({
                 key={key}
                 type="button"
                 onClick={() => setColor(key)}
-                className={`h-6 w-6 rounded-full ring-1 ring-border ${
-                  color === key ? "outline outline-2 outline-primary outline-offset-1" : ""
-                }`}
+                className={`h-6 w-6 rounded-full ring-1 ring-border ${color === key ? "outline outline-2 outline-primary outline-offset-1" : ""}`}
                 style={{ background: NOTE_COLORS[key] }}
                 aria-label={`Note color ${key}`}
               />
@@ -327,14 +320,10 @@ export function NoteEditor({
           ) : (
             <button
               type="button"
-              onClick={() => setEditingBody(true)}
+              onClick={beginBodyEditing}
               className="block min-h-[40dvh] w-full whitespace-pre-wrap break-words text-left text-base leading-relaxed text-foreground"
             >
-              {bodyText ? (
-                <BixboSafeText text={bodyText} size={18} />
-              ) : (
-                <span className="text-muted-foreground">{t("Start writing…")}</span>
-              )}
+              {bodyText ? <BixboSafeText text={bodyText} size={18} /> : <span className="text-muted-foreground">{t("Start writing…")}</span>}
             </button>
           )}
         </div>
@@ -347,14 +336,8 @@ export function NoteEditor({
                 <div key={item.id} className="flex items-center gap-3">
                   <button
                     type="button"
-                    onClick={() =>
-                      setChecklist((current) =>
-                        current.map((entry) => (entry.id === item.id ? { ...entry, done: !entry.done } : entry)),
-                      )
-                    }
-                    className={`grid h-6 w-6 shrink-0 place-items-center rounded-full ring-1 ${
-                      item.done ? "bg-primary text-primary-foreground ring-primary" : "ring-border"
-                    }`}
+                    onClick={() => setChecklist((current) => current.map((entry) => (entry.id === item.id ? { ...entry, done: !entry.done } : entry)))}
+                    className={`grid h-6 w-6 shrink-0 place-items-center rounded-full ring-1 ${item.done ? "bg-primary text-primary-foreground ring-primary" : "ring-border"}`}
                     aria-label={item.done ? "Mark incomplete" : "Mark complete"}
                   >
                     {item.done && <Check className="h-3.5 w-3.5" />}
@@ -362,12 +345,7 @@ export function NoteEditor({
                   <span className={`min-w-0 flex-1 text-sm ${item.done ? "text-muted-foreground line-through" : ""}`}>
                     <BixboSafeText text={item.text} size={16} />
                   </span>
-                  <button
-                    type="button"
-                    onClick={() => setChecklist((current) => current.filter((entry) => entry.id !== item.id))}
-                    className="rounded-full p-1.5 text-muted-foreground hover:text-destructive"
-                    aria-label={t("Delete checklist item")}
-                  >
+                  <button type="button" onClick={() => setChecklist((current) => current.filter((entry) => entry.id !== item.id))} className="rounded-full p-1.5 text-muted-foreground hover:text-destructive" aria-label={t("Delete checklist item")}>
                     <X className="h-3.5 w-3.5" />
                   </button>
                 </div>
@@ -383,15 +361,8 @@ export function NoteEditor({
                 setNewItem("");
               }}
             >
-              <Input
-                value={newItem}
-                onChange={(event) => setNewItem(event.target.value)}
-                placeholder={t("Add checklist item")}
-                className="rounded-2xl"
-              />
-              <Button type="submit" className="rounded-2xl">
-                Add
-              </Button>
+              <Input value={newItem} onChange={(event) => setNewItem(event.target.value)} placeholder={t("Add checklist item")} className="rounded-2xl" />
+              <Button type="submit" className="rounded-2xl">Add</Button>
             </form>
           </section>
         )}
