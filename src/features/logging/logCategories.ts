@@ -2,6 +2,7 @@ export type Category =
   | "postpartum"
   | "meds"
   | "pain"
+  | "mental"
   | "panic"
   | "tetany"
   | "period"
@@ -21,6 +22,7 @@ export type Category =
 export const CATEGORIES: { id: Category; label: string; emoji: string; hint: string }[] = [
   { id: "postpartum", label: "Postpartum symptoms", emoji: "🤱", hint: "Recovery symptoms · notes" },
   { id: "pain", label: "Pain", emoji: "🔥", hint: "0–10, body, quality" },
+  { id: "mental", label: "Mental wellbeing", emoji: "🧠", hint: "Mental distress · feelings · factors" },
   { id: "period", label: "Blueberry", emoji: "🫐", hint: "Flow · discharge · notes" },
   { id: "heat", label: "Heat / Cold / TENS", emoji: "♨️", hint: "Internal recovery edit flow" },
   { id: "food", label: "Food", emoji: "🍽️", hint: "What & how you feel" },
