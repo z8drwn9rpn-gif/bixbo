@@ -325,7 +325,16 @@ export function isRegistryOptionEnabled(
 }
 
 export function customLogDefinitions(_data: Pick<BixboData, "settings">): CustomLogDefinition[] {
-  return [];
+  return [
+    {
+      id: "mental-wellbeing",
+      label: "Mental wellbeing",
+      icon: "🧠",
+      color: "#8EA44A",
+      order: 10,
+      fields: [],
+    },
+  ];
 }
 
 export function getRegistryFeature(data: Pick<BixboData, "settings">, id: RegistryFeatureId): RegistryFeatureDefinition {
