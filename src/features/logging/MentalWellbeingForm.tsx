@@ -163,7 +163,7 @@ export function MentalWellbeingForm({
 
   return (
     <div className="mx-auto flex w-full max-w-xl flex-col">
-      <div className="sticky top-0 z-20 border-b border-border/70 bg-background/95 px-4 py-3 shadow-sm backdrop-blur sm:px-5">
+      <div className="relative z-10 border-b border-border/70 bg-background/95 px-4 py-3 shadow-sm sm:px-5">
         <div className="mx-auto flex w-full max-w-xl items-center gap-3">
           {step === 2 ? (
             <button
