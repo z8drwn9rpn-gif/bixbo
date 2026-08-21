@@ -26,6 +26,7 @@ type MentalWellbeingEntry = {
 type MentalDayLog = DayLog & { mentalWellbeing?: MentalWellbeingEntry[] };
 type MentalPoint = { key: string; value: number; entry: MentalWellbeingEntry };
 type Bucket = { key: string; label: string; value: number | null; count: number };
+type ChoiceCount = { value: string; count: number };
 
 const MENTAL_SCALE_LABELS = [
   "None",
@@ -64,29 +65,26 @@ function cleanChoiceLabel(value: string) {
   return value.replace(/^\p{Extended_Pictographic}\uFE0F?\s*/u, "").trim();
 }
 
-function mostCommonChoice(points: MentalPoint[], field: "states" | "factors") {
+function mostCommonChoice(points: MentalPoint[], field: "states" | "factors"): ChoiceCount | null {
   const counts = new Map<string, number>();
   points.forEach(({ entry }) => {
     (entry[field] ?? []).forEach((value) => counts.set(value, (counts.get(value) ?? 0) + 1));
   });
-  let best: { value: string; count: number } | null = null;
-  counts.forEach((count, value) => {
-    if (!best || count > best.count) best = { value, count };
-  });
-  return best;
+  return Array.from(counts.entries()).reduce<ChoiceCount | null>((best, [value, count]) => {
+    return !best || count > best.count ? { value, count } : best;
+  }, null);
 }
 
-function highDistressFactor(points: MentalPoint[]) {
+function highDistressFactor(points: MentalPoint[]): (ChoiceCount & { percentage: number }) | null {
   const high = points.filter((point) => point.value >= 7);
   if (!high.length) return null;
   const counts = new Map<string, number>();
   high.forEach(({ entry }) => {
     (entry.factors ?? []).forEach((value) => counts.set(value, (counts.get(value) ?? 0) + 1));
   });
-  let best: { value: string; count: number } | null = null;
-  counts.forEach((count, value) => {
-    if (!best || count > best.count) best = { value, count };
-  });
+  const best = Array.from(counts.entries()).reduce<ChoiceCount | null>((current, [value, count]) => {
+    return !current || count > current.count ? { value, count } : current;
+  }, null);
   return best ? { ...best, percentage: Math.round((best.count / high.length) * 100) } : null;
 }
 
