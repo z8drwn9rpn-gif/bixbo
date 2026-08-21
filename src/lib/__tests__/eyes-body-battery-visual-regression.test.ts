@@ -10,6 +10,7 @@ describe("Eyes and Body Battery visual contract", () => {
   it("uses BIXBO-owned Eyes artwork instead of the platform eye emoji", () => {
     expect(wellnessIcons).toContain("export function BixboEyeIcon");
     expect(wellnessIcons).toContain("export function BixboEyePainIcon");
+    expect(wellnessIcons).toContain("export function BixboEyeSensitivityIcon");
     expect(eyesCard).toContain("<BixboEyeIcon");
     expect(eyesCard).not.toContain('icon="👁️"');
   });
@@ -22,6 +23,15 @@ describe("Eyes and Body Battery visual contract", () => {
     expect(eyesForm).toContain('label: "Moderate pain"');
     expect(eyesForm).toContain('label: "Severe pain"');
     expect(eyesForm).toContain("<BixboEyePainIcon");
+  });
+
+  it("uses compact BIXBO sensitivity cards with persistent custom options", () => {
+    expect(eyesForm).toContain('grid grid-cols-5 gap-1.5');
+    expect(eyesForm).toContain("<BixboEyeSensitivityIcon");
+    expect(eyesForm).toContain("eyesSensitivityOptions");
+    expect(eyesForm).toContain('t("Add custom")');
+    expect(eyesForm).not.toContain('{ value: "Sensitive to light", icon: "☀" }');
+    expect(eyesForm).not.toContain('{ value: "Twitching / tetany feeling", icon: "⚡" }');
   });
 
   it("supports persistent add, rename and delete for custom Vision changes", () => {
