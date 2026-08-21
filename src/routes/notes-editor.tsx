@@ -48,14 +48,12 @@ export function NoteEditor({
   const [showChecklist, setShowChecklist] = useState(Boolean(note.checklist?.length));
   const [newItem, setNewItem] = useState("");
   const [editingTitle, setEditingTitle] = useState(false);
-  const [editingBody, setEditingBody] = useState(false);
   const [bodyText, setBodyText] = useState(() => htmlToPlainText(note.content || ""));
 
   const editorRef = useRef<HTMLTextAreaElement | null>(null);
   const contentRef = useRef(bodyText);
   const bodySaveTimerRef = useRef<number | null>(null);
   const firstMetadataRender = useRef(true);
-  const pendingBodyScrollYRef = useRef<number | null>(null);
 
   const fitEditorToContent = (editor: HTMLTextAreaElement, allowShrink = false) => {
     const minHeight = Math.round(window.innerHeight * 0.4);
@@ -86,36 +84,19 @@ export function NoteEditor({
     }));
   };
 
-  const beginBodyEditing = () => {
-    pendingBodyScrollYRef.current = window.scrollY;
-    setEditingBody(true);
-  };
-
   useEffect(() => {
-    if (!editingBody) return;
     const frame = window.requestAnimationFrame(() => {
       const editor = editorRef.current;
-      if (!editor) return;
-
-      const preservedScrollY = pendingBodyScrollYRef.current ?? window.scrollY;
-      fitEditorToContent(editor, true);
-      editor.focus({ preventScroll: true });
-      window.scrollTo({ top: preservedScrollY, left: 0, behavior: "auto" });
-
-      window.requestAnimationFrame(() => {
-        window.scrollTo({ top: preservedScrollY, left: 0, behavior: "auto" });
-        pendingBodyScrollYRef.current = null;
-      });
+      if (editor) fitEditorToContent(editor, true);
     });
     return () => window.cancelAnimationFrame(frame);
-  }, [editingBody, note.id]);
+  }, [note.id]);
 
   useEffect(() => {
     if (firstMetadataRender.current) {
       firstMetadataRender.current = false;
       return;
     }
-
     const timer = window.setTimeout(() => persist(), 500);
     return () => window.clearTimeout(timer);
   }, [checklist, color, folderId, pinned, showChecklist, title]);
@@ -159,11 +140,9 @@ export function NoteEditor({
 
   const applyMarker = (marker: "**" | "==") => {
     const editor = editorRef.current;
-    if (!editor) {
-      beginBodyEditing();
-      return;
-    }
+    if (!editor) return;
 
+    const preservedScrollY = window.scrollY;
     const start = editor.selectionStart ?? 0;
     const end = editor.selectionEnd ?? start;
     const currentText = editor.value;
@@ -179,15 +158,8 @@ export function NoteEditor({
       editor.focus({ preventScroll: true });
       const caret = end + marker.length * 2;
       editor.setSelectionRange(caret, caret);
+      window.scrollTo({ top: preservedScrollY, behavior: "auto" });
     });
-  };
-
-  const finishBodyEditing = (editor: HTMLTextAreaElement) => {
-    const nextBody = editor.value;
-    contentRef.current = nextBody;
-    setBodyText(nextBody);
-    persist(nextBody);
-    setEditingBody(false);
   };
 
   return (
@@ -218,6 +190,7 @@ export function NoteEditor({
           </button>
         </div>
       }
+      stickyHeader={false}
     >
       <div className="space-y-4 px-5 pt-3 pb-[calc(128px+env(safe-area-inset-bottom))]">
         {editingTitle ? (
@@ -265,8 +238,7 @@ export function NoteEditor({
             })}
           </span>
           <span className="ml-auto flex items-center gap-1 text-[10px]">
-            <Check className="h-3 w-3" />
-            Saved automatically
+            <Check className="h-3 w-3" /> Saved automatically
           </span>
         </div>
 
@@ -300,32 +272,22 @@ export function NoteEditor({
         </div>
 
         <div className="rounded-3xl p-4 ring-1 ring-border/70" style={{ background: NOTE_COLORS[color] ?? NOTE_COLORS.default }}>
-          {editingBody ? (
-            <textarea
-              ref={editorRef}
-              defaultValue={contentRef.current}
-              onInput={(event) => scheduleBodySave(event.currentTarget)}
-              onBlur={(event) => finishBodyEditing(event.currentTarget)}
-              rows={10}
-              inputMode="text"
-              spellCheck
-              autoCapitalize="sentences"
-              autoCorrect="on"
-              enterKeyHint="enter"
-              data-bixbo-note-editor
-              placeholder={t("Start writing…")}
-              className="block w-full resize-none overflow-hidden bg-transparent text-base leading-relaxed text-foreground outline-none placeholder:text-muted-foreground"
-              style={{ minHeight: "40dvh", WebkitUserSelect: "text", userSelect: "text", WebkitTouchCallout: "default" }}
-            />
-          ) : (
-            <button
-              type="button"
-              onClick={beginBodyEditing}
-              className="block min-h-[40dvh] w-full whitespace-pre-wrap break-words text-left text-base leading-relaxed text-foreground"
-            >
-              {bodyText ? <BixboSafeText text={bodyText} size={18} /> : <span className="text-muted-foreground">{t("Start writing…")}</span>}
-            </button>
-          )}
+          <textarea
+            ref={editorRef}
+            defaultValue={contentRef.current}
+            onInput={(event) => scheduleBodySave(event.currentTarget)}
+            onBlur={(event) => persist(event.currentTarget.value)}
+            rows={10}
+            inputMode="text"
+            spellCheck
+            autoCapitalize="sentences"
+            autoCorrect="on"
+            enterKeyHint="enter"
+            data-bixbo-note-editor
+            placeholder={t("Start writing…")}
+            className="block w-full resize-none overflow-hidden bg-transparent text-base leading-relaxed text-foreground outline-none placeholder:text-muted-foreground"
+            style={{ minHeight: "40dvh", WebkitUserSelect: "text", userSelect: "text", WebkitTouchCallout: "default", overflowAnchor: "none" }}
+          />
         </div>
 
         {showChecklist && (
