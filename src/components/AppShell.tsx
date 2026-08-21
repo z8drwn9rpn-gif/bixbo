@@ -24,6 +24,7 @@ const BIXBO_MASCOT_SRC = bixboMascot;
 export function AppShell({ children, title, right, big = false, stickyHeader = true }: { children: ReactNode; title?: ReactNode; right?: ReactNode; big?: boolean; stickyHeader?: boolean; }) {
   const pathname = useRouterState({ select: (state) => state.location.pathname });
   const showBixboIconKeyboard = !pathname.startsWith("/notes");
+  const isNoteEditor = /^\/notes\/[^/]+\/?$/.test(pathname);
   const isHomeHeader = pathname === "/" && title !== undefined;
 
   return (
@@ -34,7 +35,7 @@ export function AppShell({ children, title, right, big = false, stickyHeader = t
       <a href="#main-content" className="sr-only-focusable fixed left-3 top-3 z-50 rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground shadow-lg">Skip to content</a>
       <SideNav mascotSrc={BIXBO_MASCOT_SRC} />
       <div className="min-h-dvh lg:pl-60">
-        <div className="relative mx-auto min-h-dvh w-full overflow-x-hidden bg-background/92 pb-[calc(6rem+env(safe-area-inset-bottom))] portrait:max-w-[430px] landscape:max-lg:max-w-none lg:max-w-[1200px] lg:px-6 lg:pb-8 xl:max-w-[1320px]">
+        <div className={`relative mx-auto min-h-dvh w-full overflow-x-hidden bg-background/92 ${isNoteEditor ? "pb-[env(safe-area-inset-bottom)]" : "pb-[calc(6rem+env(safe-area-inset-bottom))]"} portrait:max-w-[430px] landscape:max-lg:max-w-none lg:max-w-[1200px] lg:px-6 lg:pb-8 xl:max-w-[1320px]`}>
           {isHomeHeader ? (
             <div
               data-bixbo-home-paint-island
@@ -87,7 +88,7 @@ export function AppShell({ children, title, right, big = false, stickyHeader = t
       <ScrollJumpControl />
       <GlobalQuickLogActions />
       {showBixboIconKeyboard ? <BixboIconKeyboard /> : null}
-      <BottomNav />
+      {isNoteEditor ? null : <BottomNav />}
     </div>
   );
 }
