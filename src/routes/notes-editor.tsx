@@ -47,25 +47,14 @@ export function NoteEditor({
   const [checklist, setChecklist] = useState<NoteChecklistItem[]>(note.checklist ?? []);
   const [showChecklist, setShowChecklist] = useState(Boolean(note.checklist?.length));
   const [newItem, setNewItem] = useState("");
-  const [editingTitle, setEditingTitle] = useState(false);
-  const [editingBody, setEditingBody] = useState(false);
-  const [bodyText, setBodyText] = useState(() => htmlToPlainText(note.content || ""));
 
   const editorRef = useRef<HTMLTextAreaElement | null>(null);
-  const contentRef = useRef(bodyText);
+  const contentRef = useRef(htmlToPlainText(note.content || ""));
   const bodySaveTimerRef = useRef<number | null>(null);
   const firstMetadataRender = useRef(true);
 
-  const fitEditorToContent = (editor: HTMLTextAreaElement, allowShrink = false) => {
-    const minHeight = Math.round(window.innerHeight * 0.4);
-    if (allowShrink) editor.style.height = "auto";
-    const target = Math.max(editor.scrollHeight, minHeight);
-    if (allowShrink || target > editor.clientHeight) editor.style.height = `${target}px`;
-  };
-
   const persist = (body = editorRef.current?.value ?? contentRef.current) => {
     contentRef.current = body;
-    setBodyText(body);
     update((current) => ({
       ...current,
       notebook: current.notebook.map((item) =>
@@ -86,23 +75,22 @@ export function NoteEditor({
   };
 
   useEffect(() => {
-    if (!editingBody) return;
-    const frame = window.requestAnimationFrame(() => {
-      const editor = editorRef.current;
-      if (editor) {
-        fitEditorToContent(editor, true);
-        editor.focus();
-      }
-    });
-    return () => window.cancelAnimationFrame(frame);
-  }, [editingBody, note.id]);
+    firstMetadataRender.current = true;
+    contentRef.current = htmlToPlainText(note.content || "");
+  }, [note.id]);
+
+  useEffect(() => {
+    const editor = editorRef.current;
+    if (!editor) return;
+    const hasScrollableContent = editor.scrollHeight > editor.clientHeight;
+    if (!hasScrollableContent) editor.scrollTop = 0;
+  }, [note.id]);
 
   useEffect(() => {
     if (firstMetadataRender.current) {
       firstMetadataRender.current = false;
       return;
     }
-
     const timer = window.setTimeout(() => persist(), 500);
     return () => window.clearTimeout(timer);
   }, [checklist, color, folderId, pinned, showChecklist, title]);
@@ -116,8 +104,6 @@ export function NoteEditor({
   const scheduleBodySave = (editor: HTMLTextAreaElement) => {
     const nextBody = editor.value;
     contentRef.current = nextBody;
-    setBodyText(nextBody);
-    fitEditorToContent(editor);
 
     if (bodySaveTimerRef.current !== null) window.clearTimeout(bodySaveTimerRef.current);
     bodySaveTimerRef.current = window.setTimeout(() => {
@@ -126,12 +112,16 @@ export function NoteEditor({
     }, 650);
   };
 
-  const goBack = () => {
+  const flushBodySave = () => {
     if (bodySaveTimerRef.current !== null) {
       window.clearTimeout(bodySaveTimerRef.current);
       bodySaveTimerRef.current = null;
     }
     persist();
+  };
+
+  const goBack = () => {
+    flushBodySave();
     onBack();
   };
 
@@ -146,43 +136,33 @@ export function NoteEditor({
 
   const applyMarker = (marker: "**" | "==") => {
     const editor = editorRef.current;
-    if (!editor) {
-      setEditingBody(true);
-      return;
-    }
+    if (!editor) return;
 
     const start = editor.selectionStart ?? 0;
     const end = editor.selectionEnd ?? start;
+    const scrollTop = editor.scrollTop;
     const currentText = editor.value;
     const next = `${currentText.slice(0, start)}${marker}${currentText.slice(start, end)}${marker}${currentText.slice(end)}`;
 
     editor.value = next;
     contentRef.current = next;
-    setBodyText(next);
-    fitEditorToContent(editor, true);
     scheduleBodySave(editor);
 
     window.requestAnimationFrame(() => {
-      editor.focus();
+      editor.focus({ preventScroll: true });
       const caret = end + marker.length * 2;
       editor.setSelectionRange(caret, caret);
+      editor.scrollTop = scrollTop;
     });
-  };
-
-  const finishBodyEditing = (editor: HTMLTextAreaElement) => {
-    const nextBody = editor.value;
-    contentRef.current = nextBody;
-    setBodyText(nextBody);
-    persist(nextBody);
-    setEditingBody(false);
   };
 
   return (
     <AppShell
+      hideBottomNav
       title={
         <button type="button" onClick={goBack} className="flex items-center gap-1 text-sm">
           <ChevronLeft className="h-5 w-5" />
-          Bixbo Note
+          Notes
         </button>
       }
       right={
@@ -205,63 +185,81 @@ export function NoteEditor({
           </button>
         </div>
       }
+      stickyHeader={false}
     >
-      <div className="space-y-4 px-5 pt-3 pb-[calc(128px+env(safe-area-inset-bottom))]">
-        {editingTitle ? (
-          <Input
-            value={title}
-            onChange={(event) => setTitle(event.target.value)}
-            onBlur={() => setEditingTitle(false)}
-            autoFocus
-            placeholder={t("Title")}
-            className="border-0 bg-transparent px-0 font-serif text-3xl shadow-none focus-visible:ring-0"
-          />
-        ) : (
-          <button
-            type="button"
-            onClick={() => setEditingTitle(true)}
-            className="block min-h-11 w-full text-left font-serif text-3xl leading-tight text-foreground"
-          >
-            <BixboSafeText text={title || t("Untitled")} size={27} />
-          </button>
-        )}
+      <div className="px-5 pt-3 pb-[calc(96px+env(safe-area-inset-bottom))]" style={{ overflowAnchor: "none" }}>
+        <Input
+          value={title}
+          onChange={(event) => setTitle(event.target.value)}
+          placeholder={t("Title")}
+          className="mb-1 h-auto border-0 bg-transparent px-0 py-1 font-serif text-[30px] leading-tight shadow-none focus-visible:ring-0"
+          autoCapitalize="sentences"
+          autoCorrect="on"
+        />
 
-        <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-          <div className="flex flex-wrap gap-1.5">
-            {folders.map((folder) => (
-              <button
-                key={folder.id}
-                type="button"
-                onClick={() => setFolderId(folder.id)}
-                className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1.5 text-xs font-medium ring-1 transition ${
-                  folderId === folder.id
-                    ? "bg-primary text-primary-foreground ring-primary"
-                    : "bg-tint text-foreground ring-border/70 hover:bg-primary/10"
-                }`}
-              >
-                {folder.icon ? (
-                  <BixboIcon emoji={folder.icon} size={14} />
-                ) : (
-                  <BixboIcon name="note" size={14} />
-                )}
-                <BixboSafeText text={folder.name} size={14} />
-              </button>
-            ))}
-          </div>
+        <div className="mb-3 flex items-center gap-2 text-[11px] text-muted-foreground">
           <span>
-            Edited {new Date(note.updatedAt ?? note.createdAt).toLocaleDateString("en-GB", {
+            {new Date(note.updatedAt ?? note.createdAt).toLocaleDateString("en-GB", {
               day: "numeric",
               month: "short",
               year: "numeric",
             })}
           </span>
-          <span className="ml-auto flex items-center gap-1 text-[10px]">
-            <Check className="h-3 w-3" />
-            Saved automatically
+          <span className="flex items-center gap-1">
+            <Check className="h-3 w-3" /> Saved automatically
           </span>
         </div>
 
-        <div className="flex flex-wrap items-center gap-2 rounded-2xl bg-surface p-2 ring-1 ring-border/70">
+        <div className="mb-3 flex gap-1.5 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+          {folders.map((folder) => (
+            <button
+              key={folder.id}
+              type="button"
+              onClick={() => setFolderId(folder.id)}
+              className={`inline-flex shrink-0 items-center gap-1.5 rounded-full px-2.5 py-1.5 text-xs font-medium ring-1 transition ${
+                folderId === folder.id
+                  ? "bg-primary text-primary-foreground ring-primary"
+                  : "bg-tint text-foreground ring-border/70 hover:bg-primary/10"
+              }`}
+            >
+              {folder.icon ? <BixboIcon emoji={folder.icon} size={14} /> : <BixboIcon name="note" size={14} />}
+              <BixboSafeText text={folder.name} size={14} />
+            </button>
+          ))}
+        </div>
+
+        <div
+          className="rounded-2xl ring-1 ring-border/60"
+          style={{ background: NOTE_COLORS[color] ?? NOTE_COLORS.default, overflowAnchor: "none" }}
+        >
+          <textarea
+            key={note.id}
+            ref={editorRef}
+            defaultValue={contentRef.current}
+            onInput={(event) => scheduleBodySave(event.currentTarget)}
+            onBlur={() => flushBodySave()}
+            inputMode="text"
+            spellCheck
+            autoCapitalize="sentences"
+            autoCorrect="on"
+            enterKeyHint="enter"
+            data-bixbo-note-editor
+            placeholder={t("Start writing…")}
+            className="block w-full resize-none overflow-y-auto overscroll-contain bg-transparent px-4 py-4 text-base leading-relaxed text-foreground outline-none placeholder:text-muted-foreground"
+            style={{
+              height: "max(52dvh, 420px)",
+              maxHeight: "70dvh",
+              WebkitUserSelect: "text",
+              userSelect: "text",
+              WebkitTouchCallout: "default",
+              overflowAnchor: "none",
+              scrollBehavior: "auto",
+              WebkitOverflowScrolling: "touch",
+            }}
+          />
+        </div>
+
+        <div className="sticky bottom-[calc(0.75rem+env(safe-area-inset-bottom))] z-20 mx-auto mt-3 flex w-fit items-center gap-1 rounded-2xl border border-border/70 bg-surface/95 p-1.5 shadow-md backdrop-blur-md">
           <button
             type="button"
             onPointerDown={(event) => event.preventDefault()}
@@ -283,78 +281,34 @@ export function NoteEditor({
           <button
             type="button"
             onClick={() => setShowChecklist((value) => !value)}
-            className={`grid h-9 w-9 place-items-center rounded-xl ${
-              showChecklist ? "bg-primary text-primary-foreground" : "hover:bg-tint"
-            }`}
+            className={`grid h-9 w-9 place-items-center rounded-xl ${showChecklist ? "bg-primary text-primary-foreground" : "hover:bg-tint"}`}
             aria-label={t("Checklist")}
           >
             <ListChecks className="h-4 w-4" />
           </button>
-          <div className="ml-auto flex items-center gap-1">
-            {(Object.keys(NOTE_COLORS) as NoteColor[]).map((key) => (
-              <button
-                key={key}
-                type="button"
-                onClick={() => setColor(key)}
-                className={`h-6 w-6 rounded-full ring-1 ring-border ${
-                  color === key ? "outline outline-2 outline-primary outline-offset-1" : ""
-                }`}
-                style={{ background: NOTE_COLORS[key] }}
-                aria-label={`Note color ${key}`}
-              />
-            ))}
-          </div>
-        </div>
-
-        <div className="rounded-3xl p-4 ring-1 ring-border/70" style={{ background: NOTE_COLORS[color] ?? NOTE_COLORS.default }}>
-          {editingBody ? (
-            <textarea
-              ref={editorRef}
-              defaultValue={contentRef.current}
-              onInput={(event) => scheduleBodySave(event.currentTarget)}
-              onBlur={(event) => finishBodyEditing(event.currentTarget)}
-              rows={10}
-              inputMode="text"
-              spellCheck
-              autoCapitalize="sentences"
-              autoCorrect="on"
-              enterKeyHint="enter"
-              data-bixbo-note-editor
-              placeholder={t("Start writing…")}
-              className="block w-full resize-none overflow-hidden bg-transparent text-base leading-relaxed text-foreground outline-none placeholder:text-muted-foreground"
-              style={{ minHeight: "40dvh", WebkitUserSelect: "text", userSelect: "text", WebkitTouchCallout: "default" }}
-            />
-          ) : (
+          <div className="mx-1 h-6 border-l border-border/70" />
+          {(Object.keys(NOTE_COLORS) as NoteColor[]).map((key) => (
             <button
+              key={key}
               type="button"
-              onClick={() => setEditingBody(true)}
-              className="block min-h-[40dvh] w-full whitespace-pre-wrap break-words text-left text-base leading-relaxed text-foreground"
-            >
-              {bodyText ? (
-                <BixboSafeText text={bodyText} size={18} />
-              ) : (
-                <span className="text-muted-foreground">{t("Start writing…")}</span>
-              )}
-            </button>
-          )}
+              onClick={() => setColor(key)}
+              className={`h-6 w-6 rounded-full ring-1 ring-border ${color === key ? "outline outline-2 outline-primary outline-offset-1" : ""}`}
+              style={{ background: NOTE_COLORS[key] }}
+              aria-label={`Note color ${key}`}
+            />
+          ))}
         </div>
 
         {showChecklist && (
-          <section className="space-y-3 rounded-3xl bg-surface p-4 ring-1 ring-border/70">
+          <section className="mt-4 space-y-3 rounded-3xl bg-surface p-4 ring-1 ring-border/70">
             <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{t("Checklist")}</h2>
             <div className="space-y-2">
               {checklist.map((item) => (
                 <div key={item.id} className="flex items-center gap-3">
                   <button
                     type="button"
-                    onClick={() =>
-                      setChecklist((current) =>
-                        current.map((entry) => (entry.id === item.id ? { ...entry, done: !entry.done } : entry)),
-                      )
-                    }
-                    className={`grid h-6 w-6 shrink-0 place-items-center rounded-full ring-1 ${
-                      item.done ? "bg-primary text-primary-foreground ring-primary" : "ring-border"
-                    }`}
+                    onClick={() => setChecklist((current) => current.map((entry) => (entry.id === item.id ? { ...entry, done: !entry.done } : entry)))}
+                    className={`grid h-6 w-6 shrink-0 place-items-center rounded-full ring-1 ${item.done ? "bg-primary text-primary-foreground ring-primary" : "ring-border"}`}
                     aria-label={item.done ? "Mark incomplete" : "Mark complete"}
                   >
                     {item.done && <Check className="h-3.5 w-3.5" />}
@@ -383,15 +337,8 @@ export function NoteEditor({
                 setNewItem("");
               }}
             >
-              <Input
-                value={newItem}
-                onChange={(event) => setNewItem(event.target.value)}
-                placeholder={t("Add checklist item")}
-                className="rounded-2xl"
-              />
-              <Button type="submit" className="rounded-2xl">
-                Add
-              </Button>
+              <Input value={newItem} onChange={(event) => setNewItem(event.target.value)} placeholder={t("Add checklist item")} className="rounded-2xl" />
+              <Button type="submit" className="rounded-2xl">Add</Button>
             </form>
           </section>
         )}

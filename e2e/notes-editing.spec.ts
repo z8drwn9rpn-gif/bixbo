@@ -28,12 +28,10 @@ test("Notes keeps multiline native editing and autosaves the body", async ({ pag
   await page.goto("/notes");
   await page.getByRole("button", { name: /Regression note/ }).click();
 
-  const bodyPreview = page.getByRole("button", { name: /First line/ });
-  await expect(bodyPreview).toBeVisible();
-  await bodyPreview.click();
-
   const editor = page.locator("textarea[data-bixbo-note-editor]");
   await expect(editor).toBeVisible();
+  await expect(editor).toHaveValue("First line");
+  await expect(page.getByRole("navigation", { name: "Primary navigation" })).toHaveCount(0);
 
   const editing = await editor.evaluate((node) => {
     const style = getComputedStyle(node);
@@ -68,5 +66,8 @@ test("Notes keeps multiline native editing and autosaves the body", async ({ pag
 
   await page.reload();
   await page.getByRole("button", { name: /Regression note/ }).click();
-  await expect(page.getByRole("button", { name: /Second wrapped line/ })).toBeVisible();
+  const reloadedEditor = page.locator("textarea[data-bixbo-note-editor]");
+  await expect(reloadedEditor).toBeVisible();
+  await expect(reloadedEditor).toHaveValue(nextBody);
+  await expect(page.getByRole("navigation", { name: "Primary navigation" })).toHaveCount(0);
 });
