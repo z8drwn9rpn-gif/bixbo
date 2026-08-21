@@ -1,9 +1,27 @@
-/* Coffee cards use a dedicated BIXBO side-profile cup artwork.
-   The 108x82 viewBox is unique to CoffeeCupSketch in the app. */
-#main-content svg[viewBox="0 0 108 82"] {
-  background: url("/bixbo-coffee-cup.svg?v=20260821-cup1") center / contain no-repeat !important;
+/* Coffee cards always render one dedicated BIXBO coffee cup.
+   Guard both the current Coffee artwork (108x82) and the legacy recipe pot
+   (92x72), because an older iOS PWA bundle can briefly survive a deployment. */
+#main-content:has(button[aria-label*="coffee" i]) article svg[viewBox="0 0 108 82"],
+#main-content:has(button[aria-label*="coffee" i]) article svg[viewBox="0 0 92 72"],
+#main-content:has(button[aria-label*="káv" i]) article svg[viewBox="0 0 108 82"],
+#main-content:has(button[aria-label*="káv" i]) article svg[viewBox="0 0 92 72"] {
+  visibility: hidden !important;
 }
 
-#main-content svg[viewBox="0 0 108 82"] > * {
-  display: none !important;
+#main-content:has(button[aria-label*="coffee" i]) article,
+#main-content:has(button[aria-label*="káv" i]) article {
+  position: relative;
+}
+
+#main-content:has(button[aria-label*="coffee" i]) article::after,
+#main-content:has(button[aria-label*="káv" i]) article::after {
+  content: "";
+  position: absolute;
+  z-index: 20;
+  top: 0.5rem;
+  right: 0.75rem;
+  width: 108px;
+  height: 82px;
+  pointer-events: none;
+  background: url("/bixbo-coffee-cup.svg?v=20260821-cup3") center / contain no-repeat;
 }
