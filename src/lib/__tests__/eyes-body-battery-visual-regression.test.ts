@@ -15,6 +15,11 @@ describe("Eyes and Body Battery visual contract", () => {
     expect(eyesCard).not.toContain('icon="👁️"');
   });
 
+  it("shows the Eyes edit title only once", () => {
+    const translatedEyesTitles = eyesCard.match(/\{t\("Eyes"\)\}/g) ?? [];
+    expect(translatedEyesTitles).toHaveLength(1);
+  });
+
   it("keeps five backwards-compatible Eyes pain intensity levels", () => {
     expect(eyesForm).toContain('"none" | "something" | "mild" | "moderate" | "severe"');
     expect(eyesForm).toContain('label: "No pain"');
