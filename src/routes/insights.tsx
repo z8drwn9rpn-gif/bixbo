@@ -7,6 +7,7 @@ import { countNoBowelMovements } from "@/lib/domain/bowel";
 import { layoutOrder } from "@/lib/layoutRegistry";
 import { EMPTY, avgDayPain, useBixbo } from "@/lib/storage";
 import { PainInsightsCard } from "@/features/insights/PainInsightsCard";
+import { MentalDistressInsightsCard } from "@/features/insights/MentalDistressInsightsCard";
 import { BowelOverviewCard } from "@/features/insights/BowelOverviewCard";
 import { DayPatternsInsightsCard } from "@/features/insights/DayPatternsInsightsCard";
 import { MedsAdherenceInsightsCard } from "@/features/insights/MedsAdherenceInsightsCard";
@@ -101,6 +102,10 @@ function InsightsPage() {
 
       <div data-bixbo-jump-label={t("Pain")} style={{ order: layoutOrder(view, "insights", "pain", 20) }}>
         <DiagnosticProfiler id="PainInsightsCard"><PainInsightsCard data={view} period={painPeriod} days={painDays} series={painSeries} anchor={painAnchor} averageValue={painAvg} onPeriodChange={setPainPeriod} onPeriodShift={(delta) => setPainAnchor((current) => shiftInsightPeriodAnchor(current, painPeriod, delta))} /></DiagnosticProfiler>
+      </div>
+
+      <div data-bixbo-jump-label={t("Mental distress")} style={{ order: 22 }}>
+        <DiagnosticProfiler id="MentalDistressInsightsCard"><MentalDistressInsightsCard data={view} /></DiagnosticProfiler>
       </div>
 
       <div data-bixbo-jump-label={t("Symptoms")} style={{ order: 25 }}>

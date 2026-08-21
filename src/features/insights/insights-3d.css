@@ -25,10 +25,11 @@
   transform: translateZ(0);
 }
 
-/* Pain and Symptoms use the canonical Pain scale colours. Keep the exact chart
-   geometry/material, but counter the translucent 3D face so the scale reads at
-   the same visual intensity as the logging controls. */
+/* Pain, Mental Distress and Symptoms use the canonical Pain scale colours. Keep
+   the exact chart geometry/material, but counter the translucent 3D face so the
+   scale reads at the same visual intensity as the logging controls. */
 [data-bixbo-insights-dashboard="true"] [data-bixbo-insight-chart-card="pain"] [data-bixbo-chart-mark="bar"],
+[data-bixbo-insights-dashboard="true"] [data-bixbo-mental-distress-card="true"] [data-bixbo-chart-mark="bar"],
 [data-bixbo-insights-dashboard="true"] [data-symptoms-trend-card="true"] [style*="height"][style*="background"] {
   filter: saturate(1.42) contrast(1.075);
 }
