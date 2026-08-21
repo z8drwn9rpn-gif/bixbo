@@ -8,6 +8,7 @@ const RELOAD_LOOP_THRESHOLD = 5;
 const RELOAD_ALERT_COOLDOWN_MS = 60_000;
 const FAST_LIFECYCLE_ABORT_MS = 1_500;
 const POST_RESUME_SANITIZE_MS = 1_000;
+const SUSPENDED_DURATION_ARTIFACT_MS = 2 * 60_000;
 
 type StoredIssue = {
   at?: unknown;
@@ -73,7 +74,8 @@ function isFastLifecycleFetchAbort(issue: StoredIssue): boolean {
   const evidence = issueEvidence(issue);
   const hiddenOrLeaving = /visibility(?:=| · )hidden|pagehide · (?:leaving|bfcache)/i.test(evidence);
   const reloadOrLegacyPoll = /navigation=reload|request · GET \/(?: ·| →)/i.test(evidence);
-  return hiddenOrLeaving || reloadOrLegacyPoll;
+  const serviceWorkerTakeover = /service-worker · controller changed/i.test(evidence);
+  return hiddenOrLeaving || reloadOrLegacyPoll || serviceWorkerTakeover;
 }
 
 /**
@@ -108,6 +110,26 @@ function isBackgroundSuspendedNetworkIssue(issue: StoredIssue): boolean {
   return visibleIndex > hiddenIndex;
 }
 
+/**
+ * Breadcrumb retention is intentionally short, so a PWA suspended for minutes
+ * can resume after the original hidden/request breadcrumbs have already aged
+ * out. A multi-minute fetch duration ending in a browser-level Load failed on
+ * iOS standalone is therefore treated as elapsed suspended wall time rather
+ * than foreground API latency. Normal HTTP responses and sub-two-minute slow
+ * requests remain visible to diagnostics.
+ */
+function isSuspendedDurationArtifact(issue: StoredIssue): boolean {
+  if (String(issue.kind ?? "") !== "network") return false;
+  const duration = typeof issue.durationMs === "number" ? issue.durationMs : 0;
+  if (duration < SUSPENDED_DURATION_ARTIFACT_MS) return false;
+
+  const message = String(issue.message ?? "");
+  if (!/failed:.*(?:TypeError: Load failed|Failed to fetch|NetworkError|network connection was lost)/i.test(message)) return false;
+
+  const evidence = issueEvidence(issue);
+  return /display=standalone-PWA/i.test(evidence) || isIosStandalonePwa();
+}
+
 function isLegacyNavigationTapIssue(issue: StoredIssue): boolean {
   const message = String(issue.message ?? "");
   const kind = String(issue.kind ?? "");
@@ -138,6 +160,7 @@ function sanitizeStoredForensicIssues(installedAt: number): void {
     const remove =
       isFastLifecycleFetchAbort(issue) ||
       isBackgroundSuspendedNetworkIssue(issue) ||
+      isSuspendedDurationArtifact(issue) ||
       isLegacyNavigationTapIssue(issue) ||
       isUnreliableIosAbruptSessionSignal(issue) ||
       isLegacyReloadLoopIssue(issue, installedAt);
@@ -219,7 +242,16 @@ export function installForensicLifecycleGuard(): void {
     // visibility event. Run once more after those completion handlers record.
     window.setTimeout(() => sanitizeStoredForensicIssues(state.installedAt), POST_RESUME_SANITIZE_MS);
   };
+
+  const sanitizeAfterControllerChange = () => {
+    // WebKit can reject requests that were owned by the previous controller.
+    // Let their catch handlers finish recording, then remove only the short
+    // Load-failed incidents whose black-box evidence contains controllerchange.
+    window.setTimeout(() => sanitizeStoredForensicIssues(state.installedAt), POST_RESUME_SANITIZE_MS);
+  };
+
   window.addEventListener("pageshow", sanitizeWhenVisible);
   window.addEventListener("focus", sanitizeWhenVisible);
   document.addEventListener("visibilitychange", sanitizeWhenVisible);
+  navigator.serviceWorker?.addEventListener("controllerchange", sanitizeAfterControllerChange);
 }
