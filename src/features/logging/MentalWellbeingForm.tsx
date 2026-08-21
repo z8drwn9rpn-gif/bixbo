@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { useI18n } from "@/hooks/useI18n";
 import { Ico } from "@/components/icons/BixboExtraIcons";
 import { Pencil, Trash2, X } from "@/components/icons/BixboExtraIcons";
@@ -93,10 +93,7 @@ export function MentalWellbeingForm({
   const [note, setNote] = useState("");
   const [scaleInfoOpen, setScaleInfoOpen] = useState(false);
 
-  const selectedEntry = useMemo(
-    () => savedEntries.find((entry) => entry.id === editingId),
-    [editingId, savedEntries],
-  );
+  const selectedEntry = savedEntries.find((entry) => entry.id === editingId);
 
   const loadEntry = (entry: MentalWellbeingEntry) => {
     setEditingId(entry.id);
