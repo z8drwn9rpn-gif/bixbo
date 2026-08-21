@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { BixboSafeText } from "@/components/icons/BixboSafeText";
 import { BixboEyePainIcon, BixboEyeSensitivityIcon } from "@/components/icons/BixboWellnessIcons";
 import { useI18n } from "@/hooks/useI18n";
 import { Input } from "@/components/ui/input";
@@ -25,6 +26,8 @@ type EyesSettingsExtension = {
   eyesSensitivityOptions?: string[];
 };
 
+const HIDDEN_EYES_SENSITIVITY_OPTIONS = new Set(["Other"]);
+
 export const EYES_VISION_CHANGES = [
   "Blurred vision",
   "Dim vision",
@@ -38,7 +41,6 @@ export const EYES_SENSITIVITY_OPTIONS = [
   { value: "More watery eyes", icon: "watery" },
   { value: "Feel strain", icon: "strain" },
   { value: "Twitching / tetany feeling", icon: "twitch" },
-  { value: "Other", icon: "other" },
 ] as const;
 
 export const EYES_PAIN_INTENSITY_OPTIONS: Array<{
@@ -78,7 +80,9 @@ export function EyesForm({
   const [affected, setAffected] = useState<EyesEpisode["affected"]>(initialEntry?.affected ?? "both");
   const [painIntensity, setPainIntensity] = useState<EyesPainIntensity>(initialEntry?.painIntensity ?? "none");
   const [painWithMovement, setPainWithMovement] = useState(initialEntry?.painWithMovement ?? false);
-  const [sensitivity, setSensitivity] = useState<string[]>(initialEntry?.sensitivity ?? []);
+  const [sensitivity, setSensitivity] = useState<string[]>(
+    () => (initialEntry?.sensitivity ?? []).filter((value) => !HIDDEN_EYES_SENSITIVITY_OPTIONS.has(value)),
+  );
   const [visionChanges, setVisionChanges] = useState<string[]>(initialEntry?.visionChanges ?? []);
   const [note, setNote] = useState(initialEntry?.note ?? "");
   const [addingSensitivity, setAddingSensitivity] = useState(false);
@@ -90,7 +94,10 @@ export function EyesForm({
     (value) => !EYES_VISION_CHANGES.includes(value as (typeof EYES_VISION_CHANGES)[number]),
   );
   const customSensitivityOptions = (eyesSettings.eyesSensitivityOptions ?? []).filter(
-    (value) => !EYES_SENSITIVITY_OPTIONS.some((option) => option.value === value),
+    (value) => (
+      !HIDDEN_EYES_SENSITIVITY_OPTIONS.has(value)
+      && !EYES_SENSITIVITY_OPTIONS.some((option) => option.value === value)
+    ),
   );
 
   const setCustomVisionChanges = (next: string[]) => {
@@ -108,7 +115,10 @@ export function EyesForm({
 
   const setCustomSensitivityOptions = (next: string[]) => {
     const unique = [...new Set(next.map((value) => value.trim()).filter(Boolean))].filter(
-      (value) => !EYES_SENSITIVITY_OPTIONS.some((option) => option.value === value),
+      (value) => (
+        !HIDDEN_EYES_SENSITIVITY_OPTIONS.has(value)
+        && !EYES_SENSITIVITY_OPTIONS.some((option) => option.value === value)
+      ),
     );
     update((current) => ({
       ...current,
@@ -159,7 +169,7 @@ export function EyesForm({
 
   const addCustomSensitivity = () => {
     const value = customSensitivityText.trim();
-    if (!value) return;
+    if (!value || HIDDEN_EYES_SENSITIVITY_OPTIONS.has(value)) return;
     if (!customSensitivityOptions.includes(value) && !EYES_SENSITIVITY_OPTIONS.some((option) => option.value === value)) {
       setCustomSensitivityOptions([...customSensitivityOptions, value]);
     }
@@ -257,16 +267,17 @@ export function EyesForm({
                     type="button"
                     onClick={() => toggleSensitivity(value)}
                     aria-pressed={active}
-                    className={`min-h-[86px] w-full rounded-2xl border px-1 py-2 text-center transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
+                    className={`flex min-h-[86px] w-full items-center justify-center rounded-2xl border px-2 py-2 text-center transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
                       active
                         ? "border-primary/35 bg-primary/10 text-foreground shadow-sm"
                         : "border-border bg-surface text-foreground hover:bg-tint"
                     }`}
                   >
-                    <span className="mx-auto grid h-8 w-8 place-items-center" aria-hidden="true">
-                      <BixboEyeSensitivityIcon variant="custom" size={30} />
-                    </span>
-                    <span className="mt-1.5 block break-words text-[10px] font-semibold leading-[1.08]">{value}</span>
+                    <BixboSafeText
+                      text={value}
+                      size={20}
+                      className="block break-words text-[10px] font-semibold leading-[1.08]"
+                    />
                   </button>
                   <button
                     type="button"
@@ -312,7 +323,7 @@ export function EyesForm({
               <button
                 type="button"
                 onClick={addCustomSensitivity}
-                disabled={!customSensitivityText.trim()}
+                disabled={!customSensitivityText.trim() || HIDDEN_EYES_SENSITIVITY_OPTIONS.has(customSensitivityText.trim())}
                 className="h-8 rounded-full bg-primary px-3 text-[11px] font-semibold text-primary-foreground disabled:opacity-40"
               >
                 {t("Add")}
