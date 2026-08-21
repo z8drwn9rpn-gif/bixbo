@@ -21,13 +21,16 @@ import {
   type InsightTooltipDetails,
 } from "./shared";
 
-type HeatmapMetric = "pain" | "period" | "bowel" | "panic" | "tetany" | "hotFlashes" | "sleep" | "sex" | `custom:${string}:${string}` | `admin:${RegistryFeatureId}:${string}`;
+type HeatmapMetric = "pain" | "mental" | "period" | "bowel" | "panic" | "tetany" | "hotFlashes" | "sleep" | "sex" | `custom:${string}:${string}` | `admin:${RegistryFeatureId}:${string}`;
 type HeatmapDatum = { color: string; tooltipColor: string; value: string; popupValue: string; description: string; entryCount: number };
 const HEATMAP_OPTIONS: { id: HeatmapMetric; label: string }[] = [
-  { id: "pain", label: "Pain" }, { id: "period", label: "Period" }, { id: "bowel", label: "Bowel" },
+  { id: "pain", label: "Pain" }, { id: "mental", label: "Mental distress" }, { id: "period", label: "Period" }, { id: "bowel", label: "Bowel" },
   { id: "panic", label: "Panic episode" }, { id: "tetany", label: "Tetany episode" }, { id: "hotFlashes", label: "Hot flashes" },
   { id: "sleep", label: "Sleep" }, { id: "sex", label: "ŠukŠuk!" },
 ];
+const MENTAL_DISTRESS_DESCRIPTIONS = [
+  "None", "Very mild", "Mild", "Uncomfortable", "Moderate", "Distressing", "Strong", "Severe", "Very severe", "Extreme", "Worst possible",
+] as const;
 
 function heatmapPeriodColor(level?: string | null): string {
   switch (level) {
@@ -56,8 +59,8 @@ export function YearHealthHeatmap({ data, anchor, onShiftPeriod }: {
 }) {
   const { t } = useI18n();
   const availableHeatmapOptions = useMemo(() => {
-    const builtins = HEATMAP_OPTIONS.filter((option) => isRegistrySurfaceEnabled(data, option.id as RegistryFeatureId, "heatmap"))
-      .map((option) => ({ ...option, label: getRegistryFeature(data, option.id as RegistryFeatureId).label }));
+    const builtins = HEATMAP_OPTIONS.filter((option) => option.id === "mental" || isRegistrySurfaceEnabled(data, option.id as RegistryFeatureId, "heatmap"))
+      .map((option) => option.id === "mental" ? option : ({ ...option, label: getRegistryFeature(data, option.id as RegistryFeatureId).label }));
     const customs = customLogDefinitions(data).flatMap((log) => {
       if (!log.heatmapFieldId) return [];
       if (log.heatmapFieldId === "__count__") return [{ id: `custom:${log.id}:__count__` as HeatmapMetric, label: log.label }];
@@ -118,6 +121,21 @@ export function YearHealthHeatmap({ data, anchor, onShiftPeriod }: {
       const entries = (log.pain ?? []).filter((entry) => entry.entryKind !== "symptom-update" && Number.isFinite(entry.score)); if (!entries.length) return null;
       const value = entries.reduce((sum, entry) => sum + Number(entry.score), 0) / entries.length; const rounded = Math.max(0, Math.min(10, Math.round(value)));
       return { color: vividPainChartColor(value), tooltipColor: vividPainChartColor(value), value: `${value.toFixed(1)}/10`, popupValue: entries.length > 1 ? `Pain avg ${value.toFixed(1)}/10` : `Pain ${value.toFixed(1)}/10`, description: PAIN_DESCRIPTIONS[rounded] ?? "Pain", entryCount: entries.length };
+    }
+    if (selectedMetric === "mental") {
+      const entries = ((log as typeof log & { mentalWellbeing?: Array<{ distress: number }> }).mentalWellbeing ?? [])
+        .filter((entry) => Number.isFinite(entry.distress) && entry.distress >= 0 && entry.distress <= 10);
+      if (!entries.length) return null;
+      const value = entries.reduce((sum, entry) => sum + Number(entry.distress), 0) / entries.length;
+      const rounded = Math.max(0, Math.min(10, Math.round(value)));
+      return {
+        color: vividPainChartColor(value),
+        tooltipColor: vividPainChartColor(value),
+        value: `${value.toFixed(1)}/10`,
+        popupValue: entries.length > 1 ? `Mental distress avg ${value.toFixed(1)}/10` : `Mental distress ${value.toFixed(1)}/10`,
+        description: MENTAL_DISTRESS_DESCRIPTIONS[rounded] ?? "Mental distress",
+        entryCount: entries.length,
+      };
     }
     if (selectedMetric === "period") {
       const level = log.periodInfo?.level ?? log.period; if (!level) return null;
