@@ -34,6 +34,7 @@ export function safeInternalNext(value: unknown): string {
 
 type AuthSearch = {
   next: string;
+  mode?: "in" | "up";
   oauthError?: string;
   oauthErrorCode?: string;
   oauthErrorDescription?: string;
@@ -42,6 +43,7 @@ type AuthSearch = {
 export const Route = createFileRoute("/auth")({
   validateSearch: (search: Record<string, unknown>): AuthSearch => ({
     next: safeInternalNext(search.next),
+    mode: search.mode === "up" ? "up" : search.mode === "in" ? "in" : undefined,
     oauthError: safeOAuthSearchText(search.error) || undefined,
     oauthErrorCode: safeOAuthSearchText(search.error_code) || undefined,
     oauthErrorDescription: safeOAuthSearchText(search.error_description) || undefined,
@@ -70,9 +72,9 @@ const SIGNUP_COPY = {
 
 function AuthPage() {
   const navigate = useNavigate();
-  const { next, oauthError, oauthErrorCode, oauthErrorDescription } = Route.useSearch();
+  const { next, mode: initialMode, oauthError, oauthErrorCode, oauthErrorDescription } = Route.useSearch();
   const { t, language } = useI18n();
-  const [mode, setMode] = useState<"in" | "up">("in");
+  const [mode, setMode] = useState<"in" | "up">(initialMode ?? "in");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
