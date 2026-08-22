@@ -229,7 +229,7 @@ export function NoteEditor({
         </div>
 
         <div
-          className="rounded-2xl ring-1 ring-border/60"
+          className="-mx-5 ring-0"
           style={{ background: NOTE_COLORS[color] ?? NOTE_COLORS.default, overflowAnchor: "none" }}
         >
           <textarea
@@ -245,10 +245,10 @@ export function NoteEditor({
             enterKeyHint="enter"
             data-bixbo-note-editor
             placeholder={t("Start writing…")}
-            className="block w-full resize-none overflow-y-auto overscroll-contain bg-transparent px-4 py-4 text-base leading-relaxed text-foreground outline-none placeholder:text-muted-foreground"
+            className="block w-full resize-none overflow-y-auto overscroll-contain bg-transparent px-5 py-4 text-base leading-relaxed text-foreground outline-none placeholder:text-muted-foreground"
             style={{
-              height: "max(52dvh, 420px)",
-              maxHeight: "70dvh",
+              height: "calc(100dvh - 245px)",
+              minHeight: "520px",
               WebkitUserSelect: "text",
               userSelect: "text",
               WebkitTouchCallout: "default",
@@ -259,7 +259,7 @@ export function NoteEditor({
           />
         </div>
 
-        <div className="sticky bottom-[calc(0.75rem+env(safe-area-inset-bottom))] z-20 mx-auto mt-3 flex w-fit items-center gap-1 rounded-2xl border border-border/70 bg-surface/95 p-1.5 shadow-md backdrop-blur-md">
+        <div className="fixed bottom-[calc(0.75rem+env(safe-area-inset-bottom))] left-1/2 z-20 flex w-fit max-w-[calc(100vw-1.5rem)] -translate-x-1/2 items-center gap-1 rounded-2xl border border-border/70 bg-surface/95 p-1.5 shadow-md backdrop-blur-md">
           <button
             type="button"
             onPointerDown={(event) => event.preventDefault()}
