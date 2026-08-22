@@ -52,6 +52,7 @@ export function NoteEditor({
   const contentRef = useRef(htmlToPlainText(note.content || ""));
   const bodySaveTimerRef = useRef<number | null>(null);
   const firstMetadataRender = useRef(true);
+  const pageBackground = NOTE_COLORS[color] ?? NOTE_COLORS.default;
 
   const persist = (body = editorRef.current?.value ?? contentRef.current) => {
     contentRef.current = body;
@@ -78,6 +79,11 @@ export function NoteEditor({
     firstMetadataRender.current = true;
     contentRef.current = htmlToPlainText(note.content || "");
   }, [note.id]);
+
+  useEffect(() => {
+    document.documentElement.style.setProperty("--bixbo-note-page-bg", pageBackground);
+    return () => document.documentElement.style.removeProperty("--bixbo-note-page-bg");
+  }, [pageBackground]);
 
   useEffect(() => {
     const editor = editorRef.current;
@@ -188,9 +194,10 @@ export function NoteEditor({
       stickyHeader={false}
     >
       <div
-        className="flex flex-col px-5 pt-3"
+        className="flex min-h-0 flex-col px-5 pt-3"
         style={{
           minHeight: "calc(100dvh - 5rem - env(safe-area-inset-bottom))",
+          background: pageBackground,
           overflowAnchor: "none",
         }}
       >
@@ -236,7 +243,7 @@ export function NoteEditor({
 
         <div
           className="-mx-5 flex min-h-0 flex-1 flex-col"
-          style={{ background: NOTE_COLORS[color] ?? NOTE_COLORS.default, overflowAnchor: "none" }}
+          style={{ background: pageBackground, overflowAnchor: "none" }}
         >
           <textarea
             key={note.id}
