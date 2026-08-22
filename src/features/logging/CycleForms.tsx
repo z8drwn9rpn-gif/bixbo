@@ -3,7 +3,7 @@ import { useI18n } from "@/hooks/useI18n";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Check, Ico, Pencil, Plus, X } from "@/components/icons/BixboExtraIcons";
+import { Check, Ico, IcoText, Pencil, Plus, X } from "@/components/icons/BixboExtraIcons";
 import { BixboSemanticIcon, type BixboSemanticIconName } from "@/components/icons/BixboSemanticIcons";
 import {
   DISCHARGE_OPTS,
@@ -306,7 +306,7 @@ export function SexForm({ date, data, update, onDone, initialEntry }: { date: st
           <div className="mt-2 flex flex-wrap gap-2">
             {values.map((value) => (
               <span key={value} className="inline-flex items-center gap-1 rounded-full bg-tint px-3 py-1.5 text-xs font-semibold text-foreground ring-1 ring-border">
-                <span>{value}</span>
+                <span className="inline-flex items-center"><IcoText text={value} size={14} /></span>
                 <button
                   type="button"
                   aria-label={`${t("Rename")} ${value}`}
@@ -437,7 +437,7 @@ export function SexForm({ date, data, update, onDone, initialEntry }: { date: st
             <span>{t(option.label ?? option.value)}</span>
           </button>
         ))}
-        {customValues("type").map((value) => <button key={value} type="button" onClick={() => setKind(value as SexKind)} className={chipClass(kind === value)}><BixboSemanticIcon name="more" size={17} /><span>{value}</span></button>)}
+        {customValues("type").map((value) => <button key={value} type="button" onClick={() => setKind(value as SexKind)} className={chipClass(kind === value)}><IcoText text={value} size={17} /></button>)}
       </div>
     </section>
 
@@ -450,7 +450,7 @@ export function SexForm({ date, data, update, onDone, initialEntry }: { date: st
             <span>{t(option.value)}</span>
           </button>
         ))}
-        {customValues("protection").map((value) => <button key={value} type="button" onClick={() => setProtection(value)} className={chipClass(protection === value)}><BixboSemanticIcon name="shield" size={17} /><span>{value}</span></button>)}
+        {customValues("protection").map((value) => <button key={value} type="button" onClick={() => setProtection(value)} className={chipClass(protection === value)}><IcoText text={value} size={17} /></button>)}
       </div>
     </section>
 
@@ -463,7 +463,7 @@ export function SexForm({ date, data, update, onDone, initialEntry }: { date: st
             <span>{t(option.value)}</span>
           </button>
         ))}
-        {customValues("feeling").map((value) => <button key={value} type="button" onClick={() => setFeelingAfter(feelingAfter === value ? "" : value)} className={chipClass(feelingAfter === value)}><BixboSemanticIcon name="good" size={17} /><span>{value}</span></button>)}
+        {customValues("feeling").map((value) => <button key={value} type="button" onClick={() => setFeelingAfter(feelingAfter === value ? "" : value)} className={chipClass(feelingAfter === value)}><IcoText text={value} size={17} /></button>)}
       </div>
     </section>
 
@@ -517,7 +517,7 @@ export function SexForm({ date, data, update, onDone, initialEntry }: { date: st
                   </button>
                 );
               })}
-              {customValues("where").map((value) => { const active = painLocations.includes(value); return <button key={value} type="button" onClick={() => setPainLocations((current) => toggleIn(current, value))} className={chipClass(active)}><BixboSemanticIcon name="pelvicPain" size={15} /> {value}</button>; })}
+              {customValues("where").map((value) => { const active = painLocations.includes(value); return <button key={value} type="button" onClick={() => setPainLocations((current) => toggleIn(current, value))} className={chipClass(active)}><IcoText text={value} size={15} /></button>; })}
             </div>
           </div>
         </div>
@@ -537,7 +537,7 @@ export function SexForm({ date, data, update, onDone, initialEntry }: { date: st
             </button>
           );
         })}
-        {customValues("symptoms").map((value) => { const active = symptomsAfter.includes(value); return <button key={value} type="button" onClick={() => { setSymptomsNone(false); setSymptomsAfter((current) => toggleIn(current, value)); }} className={symptomChipClass(active)}><BixboSemanticIcon name="more" size={15} /><span>{value}</span>{active ? <Check className="h-3 w-3" /> : null}</button>; })}
+        {customValues("symptoms").map((value) => { const active = symptomsAfter.includes(value); return <button key={value} type="button" onClick={() => { setSymptomsNone(false); setSymptomsAfter((current) => toggleIn(current, value)); }} className={symptomChipClass(active)}><IcoText text={value} size={15} />{active ? <Check className="h-3 w-3" /> : null}</button>; })}
         <button type="button" onClick={() => { setSymptomsAfter([]); setSymptomsNone((current) => !current); }} className={symptomChipClass(symptomsNone)}>
           <BixboSemanticIcon name="none" size={15} /> {t("None")}
         </button>
