@@ -187,7 +187,13 @@ export function NoteEditor({
       }
       stickyHeader={false}
     >
-      <div className="px-5 pt-3 pb-[calc(96px+env(safe-area-inset-bottom))]" style={{ overflowAnchor: "none" }}>
+      <div
+        className="flex flex-col px-5 pt-3"
+        style={{
+          minHeight: "calc(100dvh - 5rem - env(safe-area-inset-bottom))",
+          overflowAnchor: "none",
+        }}
+      >
         <Input
           value={title}
           onChange={(event) => setTitle(event.target.value)}
@@ -229,7 +235,7 @@ export function NoteEditor({
         </div>
 
         <div
-          className="-mx-5 ring-0"
+          className="-mx-5 flex min-h-0 flex-1 flex-col"
           style={{ background: NOTE_COLORS[color] ?? NOTE_COLORS.default, overflowAnchor: "none" }}
         >
           <textarea
@@ -245,10 +251,9 @@ export function NoteEditor({
             enterKeyHint="enter"
             data-bixbo-note-editor
             placeholder={t("Start writing…")}
-            className="block w-full resize-none overflow-y-auto overscroll-contain bg-transparent px-5 py-4 text-base leading-relaxed text-foreground outline-none placeholder:text-muted-foreground"
+            className="block min-h-0 w-full flex-1 resize-none overflow-y-auto overscroll-contain bg-transparent px-5 pb-[calc(88px+env(safe-area-inset-bottom))] pt-4 text-base leading-relaxed text-foreground outline-none placeholder:text-muted-foreground"
             style={{
-              height: "calc(100dvh - 245px)",
-              minHeight: "520px",
+              minHeight: "calc(100dvh - 220px - env(safe-area-inset-bottom))",
               WebkitUserSelect: "text",
               userSelect: "text",
               WebkitTouchCallout: "default",
