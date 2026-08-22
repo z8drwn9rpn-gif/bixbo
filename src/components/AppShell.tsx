@@ -41,16 +41,23 @@ export function AppShell({
   const isNoteEditorPath = /^\/notes\/[^/]+\/?$/.test(pathname);
   const bottomNavHidden = hideBottomNav || isNoteEditorPath;
   const isHomeHeader = pathname === "/" && title !== undefined;
+  const notePageBackground = isNoteEditorPath ? "var(--bixbo-note-page-bg, var(--background))" : undefined;
 
   return (
-    <div className="min-h-dvh overflow-x-hidden bg-background text-foreground" style={{ overscrollBehaviorX: "none" }}>
+    <div
+      className="min-h-dvh overflow-x-hidden text-foreground"
+      style={{ overscrollBehaviorX: "none", background: notePageBackground ?? "var(--background)" }}
+    >
       <PainEpisodeChoiceDefaults />
       <CalendarTargetBridge />
       <ProductAnalyticsRuntime />
       <a href="#main-content" className="sr-only-focusable fixed left-3 top-3 z-50 rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground shadow-lg">Skip to content</a>
       <SideNav mascotSrc={BIXBO_MASCOT_SRC} />
       <div className="min-h-dvh lg:pl-60">
-        <div className={`relative mx-auto min-h-dvh w-full overflow-x-hidden bg-background/92 ${bottomNavHidden ? "pb-[env(safe-area-inset-bottom)]" : "pb-[calc(6rem+env(safe-area-inset-bottom))]"} portrait:max-w-[430px] landscape:max-lg:max-w-none lg:max-w-[1200px] lg:px-6 lg:pb-8 xl:max-w-[1320px]`}>
+        <div
+          className={`relative mx-auto min-h-dvh w-full overflow-x-hidden ${isNoteEditorPath ? "" : "bg-background/92"} ${bottomNavHidden ? "pb-[env(safe-area-inset-bottom)]" : "pb-[calc(6rem+env(safe-area-inset-bottom))]"} portrait:max-w-[430px] landscape:max-lg:max-w-none lg:max-w-[1200px] lg:px-6 lg:pb-8 xl:max-w-[1320px]`}
+          style={isNoteEditorPath ? { background: notePageBackground } : undefined}
+        >
           {isHomeHeader ? (
             <div
               data-bixbo-home-paint-island
@@ -76,7 +83,11 @@ export function AppShell({
               {right ? <div className="ml-2 flex min-w-0 shrink-0 items-center">{right}</div> : null}
             </div>
           ) : title !== undefined ? (
-            <header data-bixbo-app-header className={`${stickyHeader ? "sticky top-0" : ""} z-30 flex min-h-14 items-center justify-between border-b border-border/65 bg-background px-4 py-2 pt-[max(0.5rem,env(safe-area-inset-top))] sm:px-5 lg:rounded-b-2xl lg:border-x lg:border-border/45`}>
+            <header
+              data-bixbo-app-header
+              className={`${stickyHeader ? "sticky top-0" : ""} z-30 flex min-h-14 items-center justify-between px-4 py-2 pt-[max(0.5rem,env(safe-area-inset-top))] sm:px-5 ${isNoteEditorPath ? "border-transparent bg-transparent" : "border-b border-border/65 bg-background lg:rounded-b-2xl lg:border-x lg:border-border/45"}`}
+              style={isNoteEditorPath ? { background: notePageBackground } : undefined}
+            >
               <div className="flex min-w-0 items-center gap-2.5 sm:gap-3">
                 <span className={`relative block shrink-0 overflow-visible ${big ? "h-20 w-20" : "h-16 w-16"}`} aria-hidden="true">
                   <img
