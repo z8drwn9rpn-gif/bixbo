@@ -30,9 +30,9 @@ describe("Notes iOS editing", () => {
     expect(source).not.toContain("fitEditorToContent(editor)");
     expect(source).toContain("editor.scrollHeight");
     expect(source).toContain("overflow-y-auto");
-    expect(source).toContain('className="-mx-5 ring-0"');
-    expect(source).toContain('height: "calc(100dvh - 245px)"');
-    expect(source).toContain('minHeight: "520px"');
+    expect(source).toContain('className="-mx-5 flex min-h-0 flex-1 flex-col"');
+    expect(source).toContain('minHeight: "calc(100dvh - 220px - env(safe-area-inset-bottom))"');
+    expect(source).toContain('minHeight: "calc(100dvh - 5rem - env(safe-area-inset-bottom))"');
   });
 
   it("keeps body editing independent from checklist visibility", () => {
