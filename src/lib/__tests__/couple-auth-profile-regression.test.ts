@@ -32,14 +32,16 @@ describe("couple sync, auth persistence and Profile recovery controls", () => {
     expect(resync).toContain("setPartner(partner ?? undefined)");
   });
 
-  it("uses a stable auth storage key and migrates the existing Supabase session", () => {
+  it("uses one canonical auth storage chain and removes legacy refresh-token copies", () => {
     const client = readFileSync("src/integrations/supabase/client.ts", "utf8");
 
     expect(client).toContain("BIXBO_AUTH_STORAGE_KEY = 'bixbo:supabase-auth:v1'");
     expect(client).toContain("CANONICAL_LEGACY_AUTH_STORAGE_KEY");
     expect(client).toContain("createPersistentAuthStorage(SUPABASE_URL)");
     expect(client).toContain("storageKey: BIXBO_AUTH_STORAGE_KEY");
-    expect(client).toContain("storage.setItem(BIXBO_AUTH_STORAGE_KEY, legacyValue)");
-    expect(client).toContain("for (const legacyKey of legacyKeys) storage.removeItem(legacyKey)");
+    expect(client).toContain("storedSessionExpiry");
+    expect(client).toContain("clearLegacyKeys();");
+    expect(client).toContain("if (freshest != null) storage.setItem(BIXBO_AUTH_STORAGE_KEY, freshest)");
+    expect(client).not.toContain("for (const legacyKey of legacyKeys) storage.setItem(legacyKey, value)");
   });
 });
