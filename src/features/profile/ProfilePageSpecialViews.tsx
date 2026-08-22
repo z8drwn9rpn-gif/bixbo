@@ -292,6 +292,29 @@ if (healthView === "privacy") {
           title="Account"
           subtitle="Sign in to connect your BIXBO account and cloud data."
         >
+          <div className="grid grid-cols-2 gap-2">
+            <button
+              type="button"
+              onClick={() => void navigate({ to: "/auth", search: { next: "/profile", mode: "in" } })}
+              className="min-h-12 rounded-xl border border-input bg-background px-4 text-sm font-semibold text-foreground"
+            >
+              {t("Sign in")}
+            </button>
+            <button
+              type="button"
+              onClick={() => void navigate({ to: "/auth", search: { next: "/profile", mode: "up" } })}
+              className="min-h-12 rounded-xl bg-primary px-4 text-sm font-semibold text-primary-foreground"
+            >
+              {t("Create account")}
+            </button>
+          </div>
+
+          <div className="flex items-center gap-3 text-xs text-muted-foreground">
+            <span className="h-px flex-1 bg-border" />
+            <span>{t("or")}</span>
+            <span className="h-px flex-1 bg-border" />
+          </div>
+
           <button
             type="button"
             onClick={() => void startAccountOAuth("google")}
@@ -307,10 +330,6 @@ if (healthView === "privacy") {
               {accountAuthError}
             </p>
           )}
-
-          <p className="text-xs leading-relaxed text-muted-foreground">
-            {t("Sign-in opens the configured OAuth provider directly. If a provider is not enabled in Supabase, BIXBO will show the provider error here.")}
-          </p>
         </Section>
 
         <PrivacyLegalControls
@@ -345,7 +364,7 @@ if (healthView === "backup") {
         const restored = normalizeBixboBackup(parsed);
 
         const confirmed = window.confirm(
-          "Restore this BIXBO backup? BIXBO will first save a safety copy of your current data, then replace the local data with the selected backup.",
+          "Restore this BIXBO backup? BIXBO will first save a safety copy of your current data, then replace the local data with the selected backup."
         );
         if (!confirmed) return;
 
