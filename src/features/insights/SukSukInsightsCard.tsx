@@ -5,7 +5,7 @@ import { fromKey, isIntercourseKind, todayKey, type BixboData } from "@/lib/stor
 import { DashboardPeriodControl, InsightGlyph } from "./InsightDashboardPrimitives";
 import { eachDay, rangeFor, shiftInsightPeriodAnchor, type Period } from "./shared";
 
-type DayItem = { key: string; count: number; times: string[] };
+type DayItem = { key: string; count: number; times: string[]; painDuringCount: number };
 
 function comparison(current: number, previous: number) {
   const diff = current - previous;
@@ -16,7 +16,17 @@ function periodEntries(data: BixboData, period: Period, anchor: Date) {
   const { startK, endK } = rangeFor(period, anchor);
   return eachDay(startK, endK).map<DayItem>((key) => {
     const entries = (data.dayLogs[key]?.sex ?? []).filter((entry) => isIntercourseKind(entry.kind));
-    return { key, count: entries.length, times: entries.map((entry) => entry.time).filter((time): time is string => !!time).sort() };
+    const painDuringCount = entries.filter((entry) => {
+      const extended = entry as typeof entry & { painWhenUi?: "during" | "after" | "both" };
+      if (extended.painWhenUi) return extended.painWhenUi === "during" || extended.painWhenUi === "both";
+      return entry.painful === "during";
+    }).length;
+    return {
+      key,
+      count: entries.length,
+      times: entries.map((entry) => entry.time).filter((time): time is string => !!time).sort(),
+      painDuringCount,
+    };
   });
 }
 
@@ -58,10 +68,13 @@ export function SukSukInsightsCard({ data }: { data: BixboData }) {
   const previousTotal = previousEntries.reduce((sum, item) => sum + item.count, 0);
   const compared = comparison(total, previousTotal);
   const activeDays = entries.filter((item) => item.count > 0).length;
+  const painDuringTotal = entries.reduce((sum, item) => sum + item.painDuringCount, 0);
+  const painDuringRate = total > 0 ? Math.round((painDuringTotal / total) * 100) : null;
   const bestDay = entries.reduce<DayItem | null>((best, item) => !best || item.count > best.count ? item : best, null);
   const bestDate = bestDay && bestDay.count > 0 ? fromKey(bestDay.key) : null;
   const bestDayName = bestDate ? bestDate.toLocaleDateString("en-GB", { weekday: "long" }) : "—";
   const insightText = bestDay && bestDay.count > 0 ? `You were most intimate ${friendlyBlock(bestDay.times)}.` : "No intimacy moments were logged in this period.";
+  const painInsightText = painDuringRate == null ? "—" : `${painDuringTotal} of ${total} times · ${painDuringRate}%`;
 
   const renderWeek = () => <div className="mt-3 grid grid-cols-7 gap-1 text-center">{entries.map((item) => {
     const date = fromKey(item.key);
@@ -102,7 +115,17 @@ export function SukSukInsightsCard({ data }: { data: BixboData }) {
       {period === "W" ? renderWeek() : period === "M" ? renderMonth() : renderYear()}
 
       <div className="mt-3 rounded-xl bg-tint/30 px-3 py-2.5 ring-1 ring-border/50">
-        <div className="flex items-start gap-2"><span className="pt-0.5 text-[#d966b1]" aria-hidden="true"><InsightGlyph kind="star" size={15} /></span><div className="min-w-0"><p className="whitespace-nowrap text-xs text-foreground" style={{ fontWeight: 700 }}>{bestDate ? `Best day: ${bestDayName}` : "No best day yet"}</p><p className="mt-1 text-[10px] leading-snug text-muted-foreground">{insightText}</p></div></div>
+        <div className="flex items-start gap-2">
+          <span className="pt-0.5 text-[#d966b1]" aria-hidden="true"><InsightGlyph kind="star" size={15} /></span>
+          <div className="min-w-0 flex-1">
+            <p className="whitespace-nowrap text-xs text-foreground" style={{ fontWeight: 700 }}>{bestDate ? `Best day: ${bestDayName}` : "No best day yet"}</p>
+            <p className="mt-1 text-[10px] leading-snug text-muted-foreground">{insightText}</p>
+            <div className="mt-2 flex items-center justify-between gap-3 border-t border-border/45 pt-2">
+              <span className="text-[10px] font-semibold text-foreground">Pain during sex</span>
+              <span className="whitespace-nowrap text-[10px] font-semibold text-muted-foreground">{painInsightText}</span>
+            </div>
+          </div>
+        </div>
       </div>
 
       <div className="mt-3 grid grid-cols-3 divide-x divide-border/60 rounded-xl bg-background/35 py-2.5 ring-1 ring-border/45">
