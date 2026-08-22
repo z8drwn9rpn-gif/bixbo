@@ -28,6 +28,18 @@ function logLocalNotificationError(error: unknown): void {
   console.warn("BIXBO local notifications:", error);
 }
 
+async function requestDurableBrowserStorage(): Promise<void> {
+  if (typeof navigator === "undefined" || !navigator.storage?.persist) return;
+
+  try {
+    if (navigator.storage.persisted && await navigator.storage.persisted()) return;
+    await navigator.storage.persist();
+  } catch {
+    // Persistence is best-effort and browser-controlled. Authentication still
+    // uses Supabase's canonical localStorage session when this API is absent or denied.
+  }
+}
+
 /**
  * Local reminders do not require cloud-health consent because they are computed
  * from the diary already stored on this device. Keep those working while all
@@ -80,8 +92,11 @@ export function ConsentAwareCloudRuntime() {
 
   // Offline/PWA shell support is app infrastructure, not health-data processing
   // and not notification permission. Register it for every supported browser.
+  // Also ask the browser to make origin storage durable so an installed/mobile
+  // BIXBO is less likely to lose its persisted Supabase session under storage pressure.
   useEffect(() => {
     void ensureAppServiceWorker();
+    void requestDurableBrowserStorage();
   }, []);
 
   useEffect(() => {
