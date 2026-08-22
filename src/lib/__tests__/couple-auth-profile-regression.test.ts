@@ -32,7 +32,7 @@ describe("couple sync, auth persistence and Profile recovery controls", () => {
     expect(resync).toContain("setPartner(partner ?? undefined)");
   });
 
-  it("keeps old and new BIXBO versions on one Supabase refresh-token lock", () => {
+  it("keeps old and new BIXBO versions in one Supabase refresh-token coordination domain", () => {
     const client = readFileSync("src/integrations/supabase/client.ts", "utf8");
 
     expect(client).toContain("BIXBO_AUTH_STORAGE_KEY = 'sb-wgdydwttzsveevkljkmr-auth-token'");
@@ -46,5 +46,13 @@ describe("couple sync, auth persistence and Profile recovery controls", () => {
     expect(client).toContain("if (freshest != null) storage.setItem(canonicalKey, freshest)");
     expect(client).not.toContain("storageKey: BIXBO_AUTH_STORAGE_KEY");
     expect(client).not.toContain("storage.setItem(INTERIM_BIXBO_AUTH_STORAGE_KEY, value)");
+  });
+
+  it("asks supported browsers to keep BIXBO origin storage durable", () => {
+    const consentRuntime = readFileSync("src/components/ConsentAwareCloudRuntime.tsx", "utf8");
+
+    expect(consentRuntime).toContain("requestDurableBrowserStorage");
+    expect(consentRuntime).toContain("navigator.storage.persisted()");
+    expect(consentRuntime).toContain("navigator.storage.persist()");
   });
 });
