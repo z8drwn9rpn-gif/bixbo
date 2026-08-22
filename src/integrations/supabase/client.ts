@@ -24,21 +24,32 @@ const WRITE_DEDUPE_WINDOW_MS = 15_000;
 const inFlightWrites = new Map<string, Promise<Response>>();
 const recentSuccessfulWrites = new Map<string, RecentWrite>();
 
-export const BIXBO_AUTH_STORAGE_KEY = 'bixbo:supabase-auth:v1';
-const CANONICAL_LEGACY_AUTH_STORAGE_KEY = 'sb-wgdydwttzsveevkljkmr-auth-token';
+// Keep the same auth key Supabase has historically used for this project.
+// Supabase's browser auth lock is scoped by storage key, so changing the key
+// creates a second refresh-token owner when an older PWA/tab is still alive.
+// Sharing this key across old and new BIXBO versions keeps every client on the
+// same rotating refresh-token chain instead of letting them refresh in parallel.
+export const BIXBO_AUTH_STORAGE_KEY = 'sb-wgdydwttzsveevkljkmr-auth-token';
+const INTERIM_BIXBO_AUTH_STORAGE_KEY = 'bixbo:supabase-auth:v1';
 
-function legacyAuthStorageKeys(supabaseUrl: string): string[] {
-  const keys = new Set<string>([CANONICAL_LEGACY_AUTH_STORAGE_KEY]);
+function defaultAuthStorageKey(supabaseUrl: string): string {
   try {
     const hostname = new URL(supabaseUrl).hostname;
     if (hostname.endsWith('.supabase.co')) {
       const projectRef = hostname.slice(0, -'.supabase.co'.length);
-      if (projectRef) keys.add(`sb-${projectRef}-auth-token`);
+      if (projectRef) return `sb-${projectRef}-auth-token`;
     }
   } catch {
-    // A malformed URL will fail client initialization below; auth migration is best-effort.
+    // A malformed URL will fail client initialization below; keep a stable
+    // fallback so storage setup itself does not mask the real configuration error.
   }
-  return [...keys];
+  return BIXBO_AUTH_STORAGE_KEY;
+}
+
+function migrationAuthStorageKeys(canonicalKey: string): string[] {
+  // Only migrate the temporary BIXBO key back into the historical Supabase key
+  // for the production project. Never copy auth state across different projects.
+  return canonicalKey === BIXBO_AUTH_STORAGE_KEY ? [INTERIM_BIXBO_AUTH_STORAGE_KEY] : [];
 }
 
 function storedSessionExpiry(value: string | null): number {
@@ -54,53 +65,53 @@ function storedSessionExpiry(value: string | null): number {
 
 function createPersistentAuthStorage(supabaseUrl: string) {
   const storage = window.localStorage;
-  const legacyKeys = legacyAuthStorageKeys(supabaseUrl);
+  const canonicalKey = defaultAuthStorageKey(supabaseUrl);
+  const migrationKeys = migrationAuthStorageKeys(canonicalKey);
 
-  const clearLegacyKeys = () => {
-    for (const legacyKey of legacyKeys) storage.removeItem(legacyKey);
+  const clearMigrationKeys = () => {
+    for (const migrationKey of migrationKeys) storage.removeItem(migrationKey);
   };
 
   return {
     getItem(key: string): string | null {
-      if (key !== BIXBO_AUTH_STORAGE_KEY) return storage.getItem(key);
+      if (key !== canonicalKey) return storage.getItem(key);
 
-      const current = storage.getItem(BIXBO_AUTH_STORAGE_KEY);
+      const current = storage.getItem(canonicalKey);
       let freshest = current;
       let freshestExpiry = storedSessionExpiry(current);
 
-      for (const legacyKey of legacyKeys) {
-        const legacyValue = storage.getItem(legacyKey);
-        if (legacyValue == null) continue;
+      for (const migrationKey of migrationKeys) {
+        const migrationValue = storage.getItem(migrationKey);
+        if (migrationValue == null) continue;
 
-        const legacyExpiry = storedSessionExpiry(legacyValue);
-        if (freshest == null || legacyExpiry > freshestExpiry) {
-          freshest = legacyValue;
-          freshestExpiry = legacyExpiry;
+        const migrationExpiry = storedSessionExpiry(migrationValue);
+        if (freshest == null || migrationExpiry > freshestExpiry) {
+          freshest = migrationValue;
+          freshestExpiry = migrationExpiry;
         }
       }
 
-      if (freshest != null) storage.setItem(BIXBO_AUTH_STORAGE_KEY, freshest);
+      if (freshest != null) storage.setItem(canonicalKey, freshest);
 
-      // A rotating Supabase refresh-token session must have one persisted owner.
-      // Keeping the same session under both the current and legacy keys lets
-      // different PWA/tab versions refresh independently and can make Supabase
-      // revoke the whole session as refresh-token reuse.
-      clearLegacyKeys();
+      // The interim custom key existed only briefly while the logout race was
+      // being diagnosed. Fold its freshest session back into Supabase's original
+      // storage/lock domain and remove the duplicate token owner immediately.
+      clearMigrationKeys();
 
       return freshest;
     },
     setItem(key: string, value: string): void {
       storage.setItem(key, value);
-      if (key !== BIXBO_AUTH_STORAGE_KEY) return;
+      if (key !== canonicalKey) return;
 
-      // Do not mirror rotating refresh tokens to the old Supabase key. One
-      // canonical storage key keeps every current BIXBO client on one token chain.
-      clearLegacyKeys();
+      // Never mirror rotating refresh tokens to a second key. One shared key is
+      // also one shared Supabase lock, including older installed BIXBO versions.
+      clearMigrationKeys();
     },
     removeItem(key: string): void {
       storage.removeItem(key);
-      if (key !== BIXBO_AUTH_STORAGE_KEY) return;
-      clearLegacyKeys();
+      if (key !== canonicalKey) return;
+      clearMigrationKeys();
     },
   };
 }
@@ -230,12 +241,13 @@ function createSupabaseClient() {
     throw new Error(message);
   }
 
+  const authStorageKey = defaultAuthStorageKey(SUPABASE_URL);
   const client = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
     global: {
       fetch: createSupabaseFetch(SUPABASE_PUBLISHABLE_KEY),
     },
     auth: {
-      storageKey: BIXBO_AUTH_STORAGE_KEY,
+      storageKey: authStorageKey,
       storage: typeof window !== 'undefined' ? createPersistentAuthStorage(SUPABASE_URL) : undefined,
       persistSession: true,
       autoRefreshToken: true,
