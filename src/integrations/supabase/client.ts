@@ -41,37 +41,66 @@ function legacyAuthStorageKeys(supabaseUrl: string): string[] {
   return [...keys];
 }
 
+function storedSessionExpiry(value: string | null): number {
+  if (!value) return 0;
+  try {
+    const parsed = JSON.parse(value) as { expires_at?: unknown };
+    const expiresAt = Number(parsed?.expires_at);
+    return Number.isFinite(expiresAt) ? expiresAt : 0;
+  } catch {
+    return 0;
+  }
+}
+
 function createPersistentAuthStorage(supabaseUrl: string) {
   const storage = window.localStorage;
   const legacyKeys = legacyAuthStorageKeys(supabaseUrl);
 
+  const clearLegacyKeys = () => {
+    for (const legacyKey of legacyKeys) storage.removeItem(legacyKey);
+  };
+
   return {
     getItem(key: string): string | null {
-      const current = storage.getItem(key);
-      if (current != null || key !== BIXBO_AUTH_STORAGE_KEY) return current;
+      if (key !== BIXBO_AUTH_STORAGE_KEY) return storage.getItem(key);
+
+      const current = storage.getItem(BIXBO_AUTH_STORAGE_KEY);
+      let freshest = current;
+      let freshestExpiry = storedSessionExpiry(current);
 
       for (const legacyKey of legacyKeys) {
         const legacyValue = storage.getItem(legacyKey);
         if (legacyValue == null) continue;
-        // Migrate in-place without deleting the old key so an in-flight older
-        // app tab can keep using the same authenticated session safely.
-        storage.setItem(BIXBO_AUTH_STORAGE_KEY, legacyValue);
-        return legacyValue;
+
+        const legacyExpiry = storedSessionExpiry(legacyValue);
+        if (freshest == null || legacyExpiry > freshestExpiry) {
+          freshest = legacyValue;
+          freshestExpiry = legacyExpiry;
+        }
       }
-      return null;
+
+      if (freshest != null) storage.setItem(BIXBO_AUTH_STORAGE_KEY, freshest);
+
+      // A rotating Supabase refresh-token session must have one persisted owner.
+      // Keeping the same session under both the current and legacy keys lets
+      // different PWA/tab versions refresh independently and can make Supabase
+      // revoke the whole session as refresh-token reuse.
+      clearLegacyKeys();
+
+      return freshest;
     },
     setItem(key: string, value: string): void {
       storage.setItem(key, value);
       if (key !== BIXBO_AUTH_STORAGE_KEY) return;
-      // Mirror while old deployments are still open. This prevents a deployment
-      // boundary or PWA hand-off from making a valid session appear signed out.
-      for (const legacyKey of legacyKeys) storage.setItem(legacyKey, value);
+
+      // Do not mirror rotating refresh tokens to the old Supabase key. One
+      // canonical storage key keeps every current BIXBO client on one token chain.
+      clearLegacyKeys();
     },
     removeItem(key: string): void {
       storage.removeItem(key);
       if (key !== BIXBO_AUTH_STORAGE_KEY) return;
-      // A real sign-out must clear both the stable and legacy session keys.
-      for (const legacyKey of legacyKeys) storage.removeItem(legacyKey);
+      clearLegacyKeys();
     },
   };
 }
