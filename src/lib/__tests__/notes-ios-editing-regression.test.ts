@@ -24,14 +24,15 @@ describe("Notes iOS editing", () => {
     expect(source).toContain('WebkitTouchCallout: "default"');
   });
 
-  it("keeps long-note height stable while the editor itself scrolls", () => {
+  it("keeps long-note height stable while the full-screen editor itself scrolls", () => {
     expect(source).not.toContain("useLayoutEffect");
     expect(source).not.toContain('editor.style.height = "0px"');
     expect(source).not.toContain("fitEditorToContent(editor)");
     expect(source).toContain("editor.scrollHeight");
     expect(source).toContain("overflow-y-auto");
-    expect(source).toContain('height: "max(52dvh, 420px)"');
-    expect(source).toContain('maxHeight: "70dvh"');
+    expect(source).toContain('className="-mx-5 ring-0"');
+    expect(source).toContain('height: "calc(100dvh - 245px)"');
+    expect(source).toContain('minHeight: "520px"');
   });
 
   it("keeps body editing independent from checklist visibility", () => {
