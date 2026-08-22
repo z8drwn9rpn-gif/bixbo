@@ -82,7 +82,9 @@ export function NoteEditor({
 
   useEffect(() => {
     document.documentElement.style.setProperty("--bixbo-note-page-bg", pageBackground);
-    return () => document.documentElement.style.removeProperty("--bixbo-note-page-bg");
+    return () => {
+      document.documentElement.style.removeProperty("--bixbo-note-page-bg");
+    };
   }, [pageBackground]);
 
   useEffect(() => {
