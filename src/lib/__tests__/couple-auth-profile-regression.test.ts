@@ -32,16 +32,19 @@ describe("couple sync, auth persistence and Profile recovery controls", () => {
     expect(resync).toContain("setPartner(partner ?? undefined)");
   });
 
-  it("uses one canonical auth storage chain and removes legacy refresh-token copies", () => {
+  it("keeps old and new BIXBO versions on one Supabase refresh-token lock", () => {
     const client = readFileSync("src/integrations/supabase/client.ts", "utf8");
 
-    expect(client).toContain("BIXBO_AUTH_STORAGE_KEY = 'bixbo:supabase-auth:v1'");
-    expect(client).toContain("CANONICAL_LEGACY_AUTH_STORAGE_KEY");
+    expect(client).toContain("BIXBO_AUTH_STORAGE_KEY = 'sb-wgdydwttzsveevkljkmr-auth-token'");
+    expect(client).toContain("INTERIM_BIXBO_AUTH_STORAGE_KEY = 'bixbo:supabase-auth:v1'");
+    expect(client).toContain("defaultAuthStorageKey");
+    expect(client).toContain("migrationAuthStorageKeys");
     expect(client).toContain("createPersistentAuthStorage(SUPABASE_URL)");
-    expect(client).toContain("storageKey: BIXBO_AUTH_STORAGE_KEY");
+    expect(client).toContain("storageKey: authStorageKey");
     expect(client).toContain("storedSessionExpiry");
-    expect(client).toContain("clearLegacyKeys();");
-    expect(client).toContain("if (freshest != null) storage.setItem(BIXBO_AUTH_STORAGE_KEY, freshest)");
-    expect(client).not.toContain("for (const legacyKey of legacyKeys) storage.setItem(legacyKey, value)");
+    expect(client).toContain("clearMigrationKeys();");
+    expect(client).toContain("if (freshest != null) storage.setItem(canonicalKey, freshest)");
+    expect(client).not.toContain("storageKey: BIXBO_AUTH_STORAGE_KEY");
+    expect(client).not.toContain("storage.setItem(INTERIM_BIXBO_AUTH_STORAGE_KEY, value)");
   });
 });
